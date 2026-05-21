@@ -1,0 +1,42 @@
+﻿# ============================================================================
+#  .gitattributes — GongwenAssistant
+# ----------------------------------------------------------------------------
+#  统一跨平台行尾、把二进制文件明确标 binary 避免 diff 噪音。
+# ============================================================================
+
+# 文本文件默认 LF（GitHub 显示一致，Windows 端 git autocrlf=true 仍能 CRLF 检出）
+* text=auto eol=lf
+
+# Windows 脚本保留 CRLF，避免 PowerShell 5 在某些场景下行尾解析问题
+*.ps1   text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# 二进制（不参与 diff/merge）
+*.dll   binary
+*.pdb   binary
+*.exe   binary
+*.tlb   binary
+*.snk   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.zip   binary
+*.7z    binary
+*.docx  binary
+*.doc   binary
+*.xlsx  binary
+*.xls   binary
+*.pdf   binary
+
+# 源码 / 配置 / 文档 显式按 UTF-8 文本处理
+*.cs       text diff=csharp
+*.csproj   text
+*.config   text
+*.xml      text
+*.resx     text
+*.md       text
+*.txt      text
+*.json     text

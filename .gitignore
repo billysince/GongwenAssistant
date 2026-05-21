@@ -1,0 +1,50 @@
+﻿# ============================================================================
+#  .gitignore — GongwenAssistant
+# ============================================================================
+#  开源项目要求：源码 + 文档 + 不可重建的二进制依赖 入仓；
+#  本地构建产物 / 临时文件 / 用户私有数据 不入仓。
+# ============================================================================
+
+# ---- 构建中间产物 (可由 tools/build.ps1 重建) ----
+src/*/bin/
+src/*/obj/
+src/*/*.user
+src/*/*.suo
+
+# ---- 临时反编译输出（保留 src/Local_Wps_Vsto_v2/ 这个最终版即可） ----
+# 早期 dnSpy 反编译生成的目录, 不再使用; 如果仍在仓库中就忽略
+src/Local_Wps_Vsto/
+
+# ---- 临时打包 zip / 日志 ----
+*.zip
+*.7z
+*.log
+*.tmp
+
+# ---- pack.ps1 输出目录（zip 通过 GitHub Release 分发，不进 git） ----
+dist/
+
+# ---- IDE / 编辑器 私有配置 ----
+.vs/
+.vscode/
+.idea/
+*.swp
+*~
+
+# ---- Windows / Mac 元数据 ----
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# ---- 用户私有 / 不进开源仓库 ----
+secret.*
+*.snk
+*.pfx
+private/
+
+# ---- 反编译工具下载缓存 (~30 MB, 用户可按 docs 指引自行下载) ----
+tools/dnspy/
+tools/ilspy/
+tools/ilspy72/
+tools/_cache/

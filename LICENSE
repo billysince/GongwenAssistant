@@ -1,0 +1,70 @@
+﻿MIT License
+
+Copyright (c) 2026 GongwenAssistant Project Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+Third-party components & their respective licenses
+================================================================================
+
+This repository redistributes the following third-party binaries under the
+licenses indicated by their original authors. The MIT license above applies
+only to the source code authored by GongwenAssistant Project Contributors
+(i.e. the C# files under src/, scripts under installer/ and tools/, and the
+markdown documents under docs/ and root).
+
+  - Newtonsoft.Json.dll          (MIT, James Newton-King)
+  - ICSharpCode.SharpZipLib.dll  (MIT, ICSharpCode Team)
+  - EntityFramework.dll          (Apache-2.0, Microsoft)
+  - System.Data.SqlServerCe.dll  (Microsoft SQL Server Compact 4.0
+                                  Redistributable EULA)
+  - Microsoft.mshtml.dll         (Microsoft Office PIA, redistributable
+                                  within registered Office applications)
+  - RibbonControlsLibrary.dll    (Microsoft, freely redistributable)
+  - Spire.Doc.dll                (COMMERCIAL, e-iceblue Co. Ltd. — see
+                                  https://www.e-iceblue.com/Licensing/License-Agreement-Free.html
+                                  for Community Edition limits; commercial use
+                                  requires a paid license)
+  - Spire.Pdf.dll                (COMMERCIAL, e-iceblue Co. Ltd. — same as above)
+  - Spire.License.dll            (COMMERCIAL, e-iceblue Co. Ltd. — bundled by
+                                  Spire.Doc / Spire.Pdf)
+  - ILSpy 7.2.1 (tools/ilspy72/) (MIT, ICSharpCode Team)
+  - dnSpyEx 6.5.1 (tools/dnspy/) (GPL-3.0, dnSpyEx Contributors)
+
+================================================================================
+Reverse-engineering notice
+================================================================================
+
+The C# sources under src/Local_Wps_Vsto_v2/ were produced by automated
+decompilation (ILSpy 7.2.1) of the publicly distributed binary
+"Local_Wps_Vsto.dll" shipped in "公文高手Wps插件单机版2.4.1.exe", followed by
+human-applied corrections to make the result compile under csc.exe v4.0.30319,
+and human-applied modifications to:
+
+  1. force "UserUtil.IsVip()" and "UserUtil.HasLogin()" to always return true
+  2. rebrand the user-visible label from 「公文高手」 to 「公文助手」
+
+This is interoperability-oriented reverse engineering of a binary whose
+original online activation services have been discontinued. We make no claim
+to the original product name, original UI design, or original template
+artworks contained in template/*.docx — these remain the intellectual
+property of the original「公文高手」development team. If you are a rights
+holder and have concerns, please contact us via GitHub Issues and we will
+respond promptly.

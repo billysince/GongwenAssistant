@@ -1,0 +1,17 @@
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+namespace Office
+{
+	[ComImport]
+	[TypeIdentifier]
+	[CompilerGenerated]
+	[Guid("000C0396-0000-0000-C000-000000000046")]
+	public interface IRibbonExtensibility
+	{
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		[DispId(1)]
+		[return: MarshalAs(UnmanagedType.BStr)]
+		string GetCustomUI([In][MarshalAs(UnmanagedType.BStr)] string RibbonID);
+	}
+}
