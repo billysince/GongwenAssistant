@@ -37,6 +37,27 @@ UI 来自原版插件，业务功能保持 100% 兼容；底层 dll 经反编译
 
 ---
 
+## 两条部署路线
+
+本仓库同时维护两条经过完整验证的部署路线，你可以按自己的偏好二选一：
+
+### 路线 A · Patcher（推荐）
+
+保留原版 `Local_Wps_Vsto.dll` 字节零修改、PKT 不变、GAC 不变；额外装一个 `A_GongwenPatcher.Connect` COM Add-in，它在 WPS 进程内用 [Harmony](https://github.com/pardeike/Harmony) 把 `UserUtil.IsVip` / `HasLogin` 的 IL 替换为 `return true`。
+
+适合的场景：
+- 你已经装过原版 `公文高手Wps插件单机版2.4.1.exe`，想做无感升级绕掉 VIP 拦截；
+- 不希望维护一份自己重编译的二进制；
+- 希望原版有任何升级时 Patcher 还能继续兼容。
+
+完整原理与脚本：[`docs/Patcher方案.md`](docs/Patcher方案.md)。
+
+### 路线 B · 自家重编译（详见下面"快速开始"）
+
+ILSpy 反编译 → 在 `src/Local_Wps_Vsto_v2/` 维护可读 C# 源码 → msbuild 出弱命名 dll → 用 HKCU + CodeBase 加载，整体不依赖 GAC、不需要管理员。
+
+---
+
 ## 快速开始
 
 > 适用环境：Windows 10 / 11 + WPS Office 个人版或专业版（已安装且能正常打开 Word 文档）。

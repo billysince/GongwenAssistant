@@ -5,11 +5,13 @@
 #  本地构建产物 / 临时文件 / 用户私有数据 不入仓。
 # ============================================================================
 
-# ---- 构建中间产物 (可由 tools/build.ps1 重建) ----
+# ---- 构建中间产物 (可由 tools/build.ps1 或 src/GongwenPatcher/build.ps1 重建) ----
 src/*/bin/
 src/*/obj/
 src/*/*.user
 src/*/*.suo
+src/GongwenPatcher/tools/*.exe
+src/GongwenPatcher/tools/*.pdb
 
 # ---- 临时反编译输出（保留 src/Local_Wps_Vsto_v2/ 这个最终版即可） ----
 # 早期 dnSpy 反编译生成的目录, 不再使用; 如果仍在仓库中就忽略
