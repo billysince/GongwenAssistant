@@ -37,10 +37,10 @@
 1. 解压 release zip 到 D:\GongwenAssistant\
 2. 跑 PowerShell -ExecutionPolicy Bypass -File installer\install.ps1
 3. 启动 WPS, 打开任意 docx
-4. 顶部菜单栏看不到「公文助手单机版2.4.1」
+4. 顶部菜单栏看不到「公文助手」
 
 ## 期望行为
-顶部菜单栏出现「公文助手单机版2.4.1」tab
+顶部菜单栏出现「公文助手」tab
 
 ## 实际行为
 菜单栏只有「文件 / 开始 / 插入 / 页面 / 引用 / 审阅 / 视图」, 没有公文助手 tab

@@ -126,7 +126,7 @@ PowerShell -ExecutionPolicy Bypass -File .\uninstall_patcher.ps1
 
 启动 WPS 打开任意 docx 文档，确认：
 
-1. Ribbon 顶部出现「公文助手单机版2.4.1」选项卡；
+1. Ribbon 顶部出现「公文助手」选项卡；
 2. 切到该选项卡，点击「智能公文」（或其他 VIP 锁定按钮）；
 3. 中央应出现绿色提示「? 已进入智能公文模式」而不是「此功能仅限 VIP 用户使用」；
 4. 查 `%LOCALAPPDATA%\GongwenAssistant\patcher.log` 应有这样的行：
