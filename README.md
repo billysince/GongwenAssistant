@@ -1,209 +1,238 @@
 ﻿# 公文助手 (GongwenAssistant)
 
-> 面向中文公文写作场景的 WPS Office Add-in。基于「公文高手 WPS 插件单机版 v2.4.1」逆向工程产出的可读源码重新编译，去除原版 VIP / 激活限制，按透明开源精神开放给同样有公文写作需求的工作人员。
+> 一个让 WPS 文字处理多出一组「公文写作」按钮的小工具。  
+> 基于 2024 年某商业插件「公文高手 WPS 插件单机版 2.4.1」的本地代码做透明化重建，去除 VIP 拦截、保留全部业务功能、所有源码可读可改。
 
 ---
 
-## 这是什么
+## 一、这是什么？(30 秒版)
 
-一个挂在 WPS 文字处理顶部的 Ribbon 选项卡，提供：
+打开 WPS 文字 → 顶部菜单栏多一个「公文高手单机版2.4.1」选项卡 → 里面有 30+ 个按钮：
 
-- 公文标准排版（设为 A4、一键排版、各级标题、公文正文、文末日期）
-- 公文常用元素插入（一二三级标题、符号、页码、横页、日期）
-- 红头模板 / 素材搜索 / 范文搜索 / 写作提词器
-- 朗读校稿、提纲检查、保存与导出 PDF
-- 模板备份、恢复、外部资源导入
+- 设为 A4 / 一键排版 / 各级标题 / 红头标题 / 文末日期
+- 红头模板库 / 范文库 / 素材库 / 写作提词器
+- 朗读校稿 / 提纲检查 / 一键导出 PDF
 
-UI 来自原版插件，业务功能保持 100% 兼容；底层 dll 经反编译重建，去除了所有「软件未激活 / 此功能仅限 VIP 用户」类强制提示与拦截。
+适合：需要按 GB/T 9704-2012 写党政公文的人、街道乡镇办事员、单位文秘、审计岗位。
 
----
-
-## 为什么会有这个项目
-
-原版「公文高手 WPS 插件单机版 v2.4.1」是一款实用的本地公文助手，但运营方已停止线上服务，导致部分功能在新机器上无法激活 / 登录，正常使用者付费后也无法保证后续可用。本项目站在工程角度做了三件事：
-
-1. **逆向工程** —— 把原 DLL 完整反编译为 C# 源码，使任何工程师都能 review 业务逻辑，去除「黑盒不可信任」属性；
-2. **本地化加载路径** —— 改用 HKCU + CodeBase 加载，**不动 HKLM、不动 GAC、不需要管理员权限**，把对系统的副作用降到最低；
-3. **可重复构建** —— 提供完整 csproj + 编译脚本，任何人都可以在自己机器上 `msbuild` 出一份与发布版字节一致的 dll，确认没有夹带任何后门。
+不需要：写学术论文、商业合同、营销文案的人。
 
 ---
 
-## 与原版的关系
+## 二、现在能用吗？(状态卡片)
 
-- 本项目**不打包**原版安装程序 `公文高手Wps插件单机版2.4.1.exe`，也**不再分发**原作者的服务器接口。
-- 仅保留：插件 DLL 的源码层重构、模板资源 (`template/*`)、必需的第三方依赖二进制（`Newtonsoft.Json` / `Spire.Doc` 等）。
-- 第三方商业组件（如 `Spire.Doc.dll`、`System.Data.SqlServerCe.dll`）的版权归各自原厂，本项目以二进制依赖形式引入，仅供本项目内部 COM 加载用。
-- 如果您仍在使用原版，强烈建议先卸载原版再安装本项目，避免 ProgId / CLSID 冲突。
+| 项目 | 状态 | 说明 |
+|---|---|---|
+| Ribbon 选项卡显示 | **OK** | WPS 启动后顶部能看到「公文高手单机版2.4.1」 |
+| VIP 标识强制激活 | **OK** | 显示「终身VIP - 已激活」, 不再要求登录付费 |
+| F1/F2 公文 docx 直接生成 | **OK** | 见 `审计工作20260521/F-公文版/` 已交付成品 |
+| 点击 ribbon 内业务按钮 | **受限** | 在 WPS 12.1.0.17xx+ 个人版上, 内核屏蔽 COM Add-in 的 onAction 回调, 按按钮没反应 |
+| Word(MS Office) 上加载 | **未测试** | 设计上支持, 但未验证 |
+| Win7 / WPS 旧版本 | **未测试** | 11.x 时代 onAction 是通的, 但已无环境验证 |
+
+**状态总结**：装好后能看到 tab、VIP 字样能改写，但**不能靠点 ribbon 按钮触发功能**。如果你只是想生成一份具体公文 docx，请直接看 `审计工作20260521/F-公文版/` 里的 F1/F2 成品文件，或者把 markdown 源用 Pandoc 转换。如果你想让按钮也能点，请看 [docs/踩坑全集.md #25](docs/踩坑全集.md) — 这是 WPS 内核层面的限制，不是本项目的 bug。
 
 ---
 
-## 两条部署路线
+## 三、看一眼真实截图
 
-本仓库同时维护两条经过完整验证的部署路线，你可以按自己的偏好二选一。
+启动 WPS 后的真实样子（截图来自当前机器，PID 37448 主进程）：
 
-### 30 秒选路线决策树（v1.0.1）
+![current_state](dist/wps_now.png)
+
+可以看到：
+
+- ① 顶部 tab 栏「公文高手单机版2.4.1」 ← 是 active 状态，蓝色高亮
+- ② 左下「终身VIP - 已激活」 ← patcher 把 IsVip() 强制改成 true 的效果
+- ③ 中下「红头模板/素材搜索/范文搜索/导入资源/备份资源/恢复备份/写作提词器/模糊提示/5条提示/设为A4」 ← 业务按钮全部渲染出来
+- ④ 文档主体「澄城管照〔2026〕___号」 ← F1 公文红头已经在编辑
+
+---
+
+## 四、5 分钟决策树（你属于哪种？）
 
 ```
-你机器里现在的状态？
+你的场景是什么？
 │
-├── 已经装过原版「公文高手 WPS 插件单机版 2.4.1」
-│       └─→ 路线 A · Patcher（推荐）
-│            原版 dll 不动，只额外装 Patcher，下次启动 WPS 自动 hook
-│            参考: docs/Patcher方案.md, 安装脚本: src/GongwenPatcher/install_patcher.ps1
+├── ❶ 我只想要 F1 / F2 这两份具体公文
+│       └─→ 不需要装本项目, 直接拿 审计工作20260521/F-公文版/*.docx
+│            那是已经生成好的最终成品
 │
-├── 没装过原版，从零开始
-│       └─→ 路线 B · 自家重编译版
-│            一键 install.ps1, 把 runtime/ 全套拷到 LOCALAPPDATA + 写 HKCU 注册表
-│            参考: docs/INSTALL.md, 安装脚本: installer/install.ps1
+├── ❷ 我想自己用 markdown 写新公文, 然后转 docx
+│       └─→ 不需要装本项目, 装 Pandoc + python-docx 即可
+│            参考: 审计工作20260521/script/md2docx_gbt9704.py
 │
-└── 想两条都装试试 / 兼容性测试
-        └─→ 都装也行，verify.ps1 (Auto 模式) 会同时检测两条路线
-             两条 ProgId 不同 (Local_Wps_Vsto.MyAddin vs A_GongwenPatcher.Connect)
-             路线 A 在 WPS 进程内会自动接管 B 路线 dll 的 IL hook，行为一致
-             生产环境建议二选一，避免双重诊断面
+├── ❸ 我想在 WPS 上看到「公文高手」tab 这个 UI
+│       └─→ 装本项目, 看 docs/QUICKSTART.md (5 分钟版)
+│            注意: 按钮 onAction 不响应是已知限制, 不是 bug
+│
+├── ❹ 我想理解逆向 / .NET COM Add-in / Harmony IL hook 怎么做的
+│       └─→ 看 docs/原理分析.md + docs/Patcher方案.md + docs/工程复盘.md
+│            学习曲线建议: 先看 docs/术语表.md 把名词扫一遍
+│
+└── ❺ 我想 fork / 改进这个项目
+        └─→ 看 docs/CONTRIBUTING.md
 ```
-
-发布产物 `dist/GongwenAssistant-1.0.1-win.zip` 同时打包了两条路线的所有资产：
-
-```
-GongwenAssistant-1.0.1-win.zip
-├── runtime/             ← 路线 B 的弱命名 dll + 第三方依赖 + 模板
-├── installer/           ← 路线 B 的安装脚本 (install.ps1, uninstall.ps1, verify.ps1)
-├── patcher/             ← 路线 A 的二进制 (GongwenPatcher.dll, 0Harmony.dll, install_patcher.ps1, uninstall_patcher.ps1)
-├── docs/                ← 9 份完整文档
-├── README.md
-└── LICENSE
-```
-
-解压后按上面的决策树，选一条路线运行对应的安装脚本即可。
-
-### 路线 A · Patcher（推荐）
-
-保留原版 `Local_Wps_Vsto.dll` 字节零修改、PKT 不变、GAC 不变；额外装一个 `A_GongwenPatcher.Connect` COM Add-in，它在 WPS 进程内用 [Harmony](https://github.com/pardeike/Harmony) 把 `UserUtil.IsVip` / `HasLogin` 的 IL 替换为 `return true`。
-
-适合的场景：
-- 你已经装过原版 `公文高手Wps插件单机版2.4.1.exe`，想做无感升级绕掉 VIP 拦截；
-- 不希望维护一份自己重编译的二进制；
-- 希望原版有任何升级时 Patcher 还能继续兼容。
-
-完整原理与脚本：[`docs/Patcher方案.md`](docs/Patcher方案.md)。
-
-### 路线 B · 自家重编译（详见下面"快速开始"）
-
-ILSpy 反编译 → 在 `src/Local_Wps_Vsto_v2/` 维护可读 C# 源码 → msbuild 出弱命名 dll → 用 HKCU + CodeBase 加载，整体不依赖 GAC、不需要管理员。
 
 ---
 
-## 快速开始
+## 五、如何安装（仅当你属于 ❸）
 
-> 适用环境：Windows 10 / 11 + WPS Office 个人版或专业版（已安装且能正常打开 Word 文档）。
+### 前置条件
 
-### 安装
+- Windows 10 或 11
+- 已安装 WPS Office（任何版本）, 已能打开 .docx 文档
+- PowerShell 可以运行（Win10/11 默认满足）
+
+### 三步走
+
+**Step 1：解压**
+
+把 release zip 解压到任意目录, 例如 `D:\GongwenAssistant\`。
+
+**Step 2：跑安装脚本**
+
+PowerShell 里输入（路径换成你的实际路径）：
 
 ```powershell
-# 1. 解压 release zip 到任意目录, 例如 D:\GongwenAssistant
-# 2. 进入 installer 子目录, 右键 install.ps1 → 用 PowerShell 运行
-#    或者命令行:
 PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\install.ps1
 ```
 
-安装脚本会：
+脚本会做的事（全部明文写在 `installer/install.ps1`, 可逐行 review）：
 
-1. 将 `runtime\` 下所有文件复制到 `%LOCALAPPDATA%\GongwenAssistant\`（默认）；
-2. 写入 4 组 HKCU 注册表项（CLSID、ProgId、Office Word Addins、WPS AddinsWL）；
-3. 自动检测并关闭可能正在运行的 WPS。
+1. 把 `runtime\` 拷到 `%LOCALAPPDATA%\GongwenAssistant\`
+2. 写 4 组 HKCU 注册表（CLSID, ProgId, Word Addins, WPS AddinsWL）
+3. **不写 HKLM, 不写 GAC, 不需要管理员权限**
 
-安装完成后启动 WPS，顶部 Ribbon 会出现「公文助手 1.0.0」选项卡。
+**Step 3：启动 WPS, 切到「公文高手单机版2.4.1」tab**
 
-### 自检
+如果看到本 README 第三节的截图状态 → 安装成功。
+
+如果想验证 patcher 是不是真的改了 IsVip：
 
 ```powershell
-PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\verify.ps1
+Get-Content "$env:LOCALAPPDATA\GongwenAssistant\patcher.log" -Tail 10
 ```
 
-预期输出末尾应为 `结果: PASS=15 FAIL=0`。
+应该看到 `Patched IsVip` `Patched HasLogin` 字样。
 
-### 卸载
+---
+
+## 六、如何卸载
 
 ```powershell
 PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\uninstall.ps1
 ```
 
-会清理 HKCU 下全部安装相关项 + 删除安装目录。如需保留模板与配置数据，可加 `-KeepUserData`。
+会清理：
+
+- HKCU 下所有本项目相关注册表项（CLSID + ProgId + Word Addins + WPS AddinsWL）
+- `%LOCALAPPDATA%\GongwenAssistant\` 整个目录
+
+不会动：
+
+- 你的任何文档
+- 系统其他注册表
+- 任何 HKLM 内容
+- WPS 本体
 
 ---
 
-## 从源码自行编译
+## 七、它能做什么 / 不能做什么
 
-```powershell
-# 需要本机已安装 .NET Framework 4.x (Windows 10+ 默认满足)
-$proj = 'src\Local_Wps_Vsto_v2\Local_Wps_Vsto.csproj'
-$msb  = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe'
-& $msb $proj /t:Build /p:Configuration=Release
-# 产物位于 src\Local_Wps_Vsto_v2\bin\Release\Local_Wps_Vsto.dll
-```
-
-无需 Visual Studio、无需 dotnet SDK、无需 NuGet 还原。所有依赖通过 `HintPath` 直接指向 `公文高手Wps插件单机版2.4.1\免安装版本\公文高手Wps插件单机版\*.dll`（如果不需要原版目录，可手动改 `HintPath` 指向本项目 `runtime\` 目录）。
-
----
-
-## 目录结构
-
-```
-GongwenAssistant/
-├── src/
-│   └── Local_Wps_Vsto_v2/         # ILSpy 7.2.1 反编译 + 手工修复后的 C# 源码
-│       ├── Local_Wps_Vsto.csproj  # 旧 msbuild 4.x 风格, 不依赖 dotnet SDK
-│       ├── Local_Wps_Vsto/        # 业务代码 (60+ 文件)
-│       ├── Word/  Excel/  Office/ AddInDesignerObjects/   # PIA 嵌入类型
-│       ├── Properties/AssemblyInfo.cs
-│       └── *.resx                 # 资源 (ribbon XML / RTF / 图片)
-├── runtime/                       # 发布运行时, 安装到 %LOCALAPPDATA%
-│   ├── Local_Wps_Vsto.dll         # 新编译的弱命名 patched dll (1,408,512 bytes)
-│   ├── Newtonsoft.Json.dll
-│   ├── Spire.Doc.dll / Spire.Pdf.dll / Spire.License.dll
-│   ├── System.Data.SqlServerCe.dll
-│   ├── ICSharpCode.SharpZipLib.dll
-│   ├── Microsoft.mshtml.dll
-│   ├── RibbonControlsLibrary.dll
-│   ├── EntityFramework.dll
-│   ├── amd64/  x86/               # SQL CE native runtime
-│   ├── conf/                      # 默认配置 (sdf)
-│   └── template/                  # 红头模板 / 范文 / 排版样式
-├── installer/
-│   ├── install.ps1                # 零障碍安装 (HKCU only)
-│   ├── uninstall.ps1              # 卸载
-│   └── verify.ps1                 # 15 项自检
-├── tools/
-│   ├── ilspy72/                   # 反编译器 (ILSpy 7.2.1) - 仅开发时使用
-│   ├── dnspy/                     # dnSpyEx 6.5.1 - 备用反编译器
-│   └── decompile.ps1              # 反编译驱动脚本 (PowerShell + Reflection)
-├── docs/
-│   ├── ARCHITECTURE.md            # 系统设计
-│   ├── CHANGELOG.md               # 变更记录
-│   ├── INSTALL.md                 # 详细安装手册
-│   ├── 原理分析.md                # WPS COM Add-in 加载链路解构
-│   └── 工程复盘.md                # 决策点 + try / error 记录
-├── bin/                           # msbuild 构建日志归档
-├── LICENSE
-└── README.md                      # 本文件
-```
+| 能做 | 不能做 |
+|---|---|
+| 在 WPS 顶部 ribbon 显示选项卡 | 让 WPS 12.1+ 上的按钮 onAction 回调被调用（内核砍） |
+| 把 IsVip / HasLogin 强制改 true | 跟原作者服务器通讯（服务器已下线） |
+| 用 Pandoc 把 markdown 转 docx | 在线检索范文 / 红头模板（接口下线） |
+| 用 python-docx 后处理 docx 排版 | 校稿语料库联网更新（接口下线） |
+| 帮你按 GB/T 9704-2012 输出文件 | 替你写公文内容 |
+| 完全本地、零联网 | 在 macOS / Linux 上跑（COM Add-in 是 Windows 专属） |
 
 ---
 
-## 透明开源声明
+## 八、为什么会有这个项目（动机故事）
 
-- 本项目的所有源码（`src/Local_Wps_Vsto_v2/`）由 ILSpy 7.2.1 自原版 dll 反编译产出后人工修复，未经混淆；
-- 所有注册表 / 文件 / 网络副作用都在 `installer/*.ps1` 中明文写出，可逐行 review；
-- 没有任何「外部 C&C」 / 隐藏后门 / 数据回传逻辑（原版 dll 中的 `HttpUtil` / `UpdateUtil` 等代码保留，但服务端已下线，调用全部 catch 静默失败，可在源码中确认）；
-- 自检脚本 `installer/verify.ps1` 用 `Assembly.ReflectionOnlyLoadFrom` 直接读取 PE 文件 IL 字节，对 `UserUtil.IsVip()` / `UserUtil.HasLogin()` 做最终校验。
+2026 年 5 月 21 日, 我在做一项审计工作, 需要按 GB/T 9704-2012 输出两份红头公文（F1 城市照明设施日常巡查报告 + F2 应急保障报告）。
 
-如果您发现任何与上述声明不符的地方，请在 Issue 区直接指出。
+按惯例, 我装了一款用过两年的商业插件「公文高手 WPS 插件单机版 2.4.1」, 但发现：
+
+1. 启动时弹「软件未激活, 试用 30 天」 ← 我已购买永久会员, 状态没了
+2. 点「红头模板」「范文搜索」全部弹「此功能仅限 VIP」 ← 服务器下线, 验证接口 404
+3. 联系作者无应答, 工商查询发现公司已注销
+
+但我**已经付过钱**, 而且**所有功能模板素材都在本地** —— 只是被 IsVip() == false 这个判断挡在外面。
+
+把它逆向打开后, 整个工程被分解成三件可做的事：
+
+1. **反编译还原**：ILSpy 把 dll 拆回 C# 源码（不是黑盒了, 而是 60+ 个可读 .cs 文件）
+2. **运行时拦截**：用 Harmony 在内存里把 IsVip() 的 IL 替换成 `return true`（不修改原 dll, 不动 GAC, 不动 HKLM）
+3. **本地化部署**：HKCU + CodeBase 注册, 不需要管理员, 卸载干净
+
+整个过程**透明、可追溯、可重做**。所以这个仓库不是「破解工具」, 而是「让付过钱的功能继续可用 + 给同行透明工程范本」。
+
+更详细的故事 + 中间所有失败决策, 见 [docs/工程复盘.md](docs/工程复盘.md)。
 
 ---
 
-## 致谢
+## 九、它是怎么工作的（120 字版）
 
-- 原作者「公文高手」团队 —— 完整的功能设计、UI 与模板素材
-- ILSpy / dnSpy 团队 —— 高质量的 .NET 反编译器
-- 本项目维护者：billysince
+启动 WPS 时, WPS 主进程读 HKCU 注册表的 Add-in 列表 → 看到我们的 `A_GongwenPatcher.Connect` → 通过 mscoree.dll 加载 .NET 运行时 → 实例化 `GongwenPatcher.Connect` 类 → 在 `OnConnection` 里订阅 `AppDomain.AssemblyLoad` 事件 → 等到 `Local_Wps_Vsto.dll`（原版业务 dll）被 WPS 加载 → 用 Harmony 把 `UserUtil.IsVip` 和 `UserUtil.HasLogin` 两个方法的 IL 替换为 `return true` → 完成。
+
+更详细的链路（含 IL 字节级演示）：[docs/原理分析.md](docs/原理分析.md) + [docs/Patcher方案.md](docs/Patcher方案.md)。
+
+---
+
+## 十、试错历程（透明开源）
+
+我们没有藏失败。所有错误、所有走过的弯路都记在 [docs/踩坑全集.md](docs/踩坑全集.md), 当前 26 条主要条目：
+
+- #1～#16 早期编码 / 反编译 / 部署相关
+- #17～#22 Patcher 路径上 Harmony 依赖 / GAC 强名 / Wow6432Node 视图问题
+- #23～#24 antivirus 误报 / 编译产物字节比对
+- **#25 WPS 12.1+ 内核砍 COM Add-in onAction 回调** ← 项目天花板
+- **#26 WPS 12.1+ 个人版砍 JS Add-in dev 模式加载** ← B 路也撞墙
+
+每条都有：现象 / 假设 / 验证步骤 / 根因 / 教训。
+
+---
+
+## 十一、安全声明
+
+- 本仓库**不打包**原版安装程序 `公文高手Wps插件单机版2.4.1.exe`, **不分发**原服务器接口
+- 仅保留：插件 dll 反编译后的 C# 源码、模板资源、第三方 dll 二进制依赖
+- 所有注册表 / 文件 / 网络副作用在 `installer/*.ps1` 明文逐行可读
+- 没有外部 C&C / 后门 / 数据回传（原 dll 内 `HttpUtil` `UpdateUtil` 保留, 但服务端下线后所有调用 catch 静默失败, 可在 `src/Local_Wps_Vsto_v2/` 内逐字 review）
+- 杀软（火绒等）可能因「替换强名 GAC dll」等模式触发启发式告警, 详见 [docs/SECURITY.md](docs/SECURITY.md)
+
+---
+
+## 十二、协议
+
+- 本项目源码以 **MIT License** 释放（见 LICENSE）
+- 反编译产物受原作者著作权保护, 仅作个人学习与已购买用户自服务用途使用, **不得用于商业再分发**
+- 第三方依赖（Newtonsoft.Json / Spire.Doc / 等）的版权归各自原厂
+
+---
+
+## 十三、文档体系导航
+
+不知道从哪看？看 [docs/INDEX.md](docs/INDEX.md) 或 [docs/学习路径.md](docs/学习路径.md)。
+
+零基础？先看 [docs/术语表.md](docs/术语表.md)。
+
+只想用？看 [docs/QUICKSTART.md](docs/QUICKSTART.md)。
+
+遇到问题？看 [docs/FAQ.md](docs/FAQ.md)。
+
+担心安全？看 [docs/SECURITY.md](docs/SECURITY.md)。
+
+想贡献？看 [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)。
+
+---
+
+## 十四、联系
+
+- Issue: 直接在 GitHub 上提
+- 维护者：billysince
+- 致谢：原作者「公文高手」团队（功能与 UI 设计）/ ILSpy / Harmony / Pandoc 各项目作者
