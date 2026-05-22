@@ -82,7 +82,7 @@ PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\install.p
 ## 第 3 步：启动 WPS, 看到 tab
 
 1. 打开 WPS Office, 新建或打开任何 docx 文档
-2. 看顶部菜单栏, 应该看到「**公文高手单机版2.4.1**」
+2. 看顶部菜单栏, 应该看到「**公文助手单机版2.4.1**」
 3. 点进去, 看到「终身VIP - **已激活**」字样
 
 期望看到的样子：
@@ -118,7 +118,7 @@ Get-Content "$env:LOCALAPPDATA\GongwenAssistant\patcher.log" -Tail 10
    ```
 2. 如果有多个, **手动**关掉所有 WPS 窗口（不要用 `Stop-Process -Force`, 用窗口右上角 X）
 3. 重新启动 WPS, 等 5 秒
-4. 切到「公文高手单机版2.4.1」tab
+4. 切到「公文助手单机版2.4.1」tab
 
 ### 4.3 IsVip patch 失败
 

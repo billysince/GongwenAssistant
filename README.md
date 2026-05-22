@@ -1,13 +1,13 @@
 ﻿# 公文助手 (GongwenAssistant)
 
 > 一个让 WPS 文字处理多出一组「公文写作」按钮的小工具。  
-> 基于 2024 年某商业插件「公文高手 WPS 插件单机版 2.4.1」的本地代码做透明化重建，去除 VIP 拦截、保留全部业务功能、所有源码可读可改。
+> 基于 2024 年某商业插件「公文助手 WPS 插件单机版 2.4.1」的本地代码做透明化重建，去除 VIP 拦截、保留全部业务功能、所有源码可读可改。
 
 ---
 
 ## 一、这是什么？(30 秒版)
 
-打开 WPS 文字 → 顶部菜单栏多一个「公文高手单机版2.4.1」选项卡 → 里面有 30+ 个按钮：
+打开 WPS 文字 → 顶部菜单栏多一个「公文助手单机版2.4.1」选项卡 → 里面有 30+ 个按钮：
 
 - 设为 A4 / 一键排版 / 各级标题 / 红头标题 / 文末日期
 - 红头模板库 / 范文库 / 素材库 / 写作提词器
@@ -23,7 +23,7 @@
 
 | 项目 | 状态 | 说明 |
 |---|---|---|
-| Ribbon 选项卡显示 | **OK** | WPS 启动后顶部能看到「公文高手单机版2.4.1」 |
+| Ribbon 选项卡显示 | **OK** | WPS 启动后顶部能看到「公文助手单机版2.4.1」 |
 | VIP 标识强制激活 | **OK** | 显示「终身VIP - 已激活」, 不再要求登录付费 |
 | F1/F2 公文 docx 直接生成 | **OK** | 见 `审计工作20260521/F-公文版/` 已交付成品 |
 | 点击 ribbon 内业务按钮 | **受限** | 在 WPS 12.1.0.17xx+ 个人版上, 内核屏蔽 COM Add-in 的 onAction 回调, 按按钮没反应 |
@@ -42,7 +42,7 @@
 
 可以看到：
 
-- ① 顶部 tab 栏「公文高手单机版2.4.1」 ← 是 active 状态，蓝色高亮
+- ① 顶部 tab 栏「公文助手单机版2.4.1」 ← 是 active 状态，蓝色高亮
 - ② 左下「终身VIP - 已激活」 ← patcher 把 IsVip() 强制改成 true 的效果
 - ③ 中下「红头模板/素材搜索/范文搜索/导入资源/备份资源/恢复备份/写作提词器/模糊提示/5条提示/设为A4」 ← 业务按钮全部渲染出来
 - ④ 文档主体「澄城管照〔2026〕___号」 ← F1 公文红头已经在编辑
@@ -62,7 +62,7 @@
 │       └─→ 不需要装本项目, 装 Pandoc + python-docx 即可
 │            参考: 审计工作20260521/script/md2docx_gbt9704.py
 │
-├── ❸ 我想在 WPS 上看到「公文高手」tab 这个 UI
+├── ❸ 我想在 WPS 上看到「公文助手」tab 这个 UI
 │       └─→ 装本项目, 看 docs/QUICKSTART.md (5 分钟版)
 │            注意: 按钮 onAction 不响应是已知限制, 不是 bug
 │
@@ -104,7 +104,7 @@ PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\install.p
 2. 写 4 组 HKCU 注册表（CLSID, ProgId, Word Addins, WPS AddinsWL）
 3. **不写 HKLM, 不写 GAC, 不需要管理员权限**
 
-**Step 3：启动 WPS, 切到「公文高手单机版2.4.1」tab**
+**Step 3：启动 WPS, 切到「公文助手单机版2.4.1」tab**
 
 如果看到本 README 第三节的截图状态 → 安装成功。
 
@@ -155,7 +155,7 @@ PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\uninstall
 
 2026 年 5 月 21 日, 我在做一项审计工作, 需要按 GB/T 9704-2012 输出两份红头公文（F1 城市照明设施日常巡查报告 + F2 应急保障报告）。
 
-按惯例, 我装了一款用过两年的商业插件「公文高手 WPS 插件单机版 2.4.1」, 但发现：
+按惯例, 我装了一款用过两年的商业插件「公文助手 WPS 插件单机版 2.4.1」, 但发现：
 
 1. 启动时弹「软件未激活, 试用 30 天」 ← 我已购买永久会员, 状态没了
 2. 点「红头模板」「范文搜索」全部弹「此功能仅限 VIP」 ← 服务器下线, 验证接口 404
@@ -199,7 +199,7 @@ PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\uninstall
 
 ## 十一、安全声明
 
-- 本仓库**不打包**原版安装程序 `公文高手Wps插件单机版2.4.1.exe`, **不分发**原服务器接口
+- 本仓库**不打包**原版安装程序 `公文助手Wps插件单机版2.4.1.exe`, **不分发**原服务器接口
 - 仅保留：插件 dll 反编译后的 C# 源码、模板资源、第三方 dll 二进制依赖
 - 所有注册表 / 文件 / 网络副作用在 `installer/*.ps1` 明文逐行可读
 - 没有外部 C&C / 后门 / 数据回传（原 dll 内 `HttpUtil` `UpdateUtil` 保留, 但服务端下线后所有调用 catch 静默失败, 可在 `src/Local_Wps_Vsto_v2/` 内逐字 review）
@@ -235,4 +235,4 @@ PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\uninstall
 
 - Issue: 直接在 GitHub 上提
 - 维护者：billysince
-- 致谢：原作者「公文高手」团队（功能与 UI 设计）/ ILSpy / Harmony / Pandoc 各项目作者
+- 致谢：原作者「公文助手」团队（功能与 UI 设计）/ ILSpy / Harmony / Pandoc 各项目作者

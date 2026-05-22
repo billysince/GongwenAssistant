@@ -111,7 +111,7 @@ docs/
 - HKCU 部署链路 → 不动 HKLM / GAC, 无需管理员
 - Harmony IL 注入 → IsVip / HasLogin patch 成功（log 可证）
 - VIP 字样改写 → 「终身VIP - 已激活」可见
-- ribbon tab 显示 → 「公文高手单机版2.4.1」可见
+- ribbon tab 显示 → 「公文助手单机版2.4.1」可见
 - F1 / F2 公文 docx 直接交付 → 见 `审计工作20260521/F-公文版/`
 
 ### 未完成（已知天花板）

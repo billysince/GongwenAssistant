@@ -8,7 +8,7 @@ namespace Local_Wps_Vsto
 	{
 		public static string strDbFile = "gwbl.gwbldb";
 
-		public static string strGwgsDbFile = "C:\\Program Files (x86)\\公文高手\\gwbl.gwbldb";
+		public static string strGwgsDbFile = "C:\\Program Files (x86)\\公文助手\\gwbl.gwbldb";
 
 		public SqlCeConnection dbConnection;
 
@@ -42,7 +42,7 @@ namespace Local_Wps_Vsto
 				dbConnection = new SqlCeConnection();
 				dbConnectionstr = new SqlCeConnectionStringBuilder();
 				string text = CommonConfig.strBaseFolder + "\\gwgs.sdf";
-				text = text.Replace("公文高手插件", "公文高手");
+				text = text.Replace("公文助手插件", "公文助手");
 				dbConnectionstr.DataSource = text;
 				dbConnectionstr.Password = "denvy1987";
 				dbConnection.ConnectionString = dbConnectionstr.ToString();

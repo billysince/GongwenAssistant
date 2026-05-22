@@ -8,7 +8,7 @@ namespace Local_Wps_Vsto
 	{
 		public const string strDbFile = "gwgs.sdf";
 
-		public static string strGwgsDbFile = "C:\\Program Files (x86)\\公文高手\\gwbl.gwbldb";
+		public static string strGwgsDbFile = "C:\\Program Files (x86)\\公文助手\\gwbl.gwbldb";
 
 		public SqlCeConnection dbConnection;
 

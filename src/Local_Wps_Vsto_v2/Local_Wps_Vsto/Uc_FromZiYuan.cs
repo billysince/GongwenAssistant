@@ -46,7 +46,7 @@ namespace Local_Wps_Vsto
 			try
 			{
 				OpenFileDialog openFileDialog = new OpenFileDialog();
-				openFileDialog.Filter = "公文高手资源包(*.zydb)|*.zydb";
+				openFileDialog.Filter = "公文助手资源包(*.zydb)|*.zydb";
 				if (openFileDialog.ShowDialog() == DialogResult.OK)
 				{
 					tbTitle.Text = openFileDialog.FileName;

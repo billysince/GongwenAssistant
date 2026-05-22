@@ -25,7 +25,7 @@
 
 ```markdown
 ## 现象（一句话）
-打开 WPS 后, 公文高手 tab 看不到。
+打开 WPS 后, 公文助手 tab 看不到。
 
 ## 环境
 - Windows 11 23H2 22631.4112
@@ -37,13 +37,13 @@
 1. 解压 release zip 到 D:\GongwenAssistant\
 2. 跑 PowerShell -ExecutionPolicy Bypass -File installer\install.ps1
 3. 启动 WPS, 打开任意 docx
-4. 顶部菜单栏看不到「公文高手单机版2.4.1」
+4. 顶部菜单栏看不到「公文助手单机版2.4.1」
 
 ## 期望行为
-顶部菜单栏出现「公文高手单机版2.4.1」tab
+顶部菜单栏出现「公文助手单机版2.4.1」tab
 
 ## 实际行为
-菜单栏只有「文件 / 开始 / 插入 / 页面 / 引用 / 审阅 / 视图」, 没有公文高手 tab
+菜单栏只有「文件 / 开始 / 插入 / 页面 / 引用 / 审阅 / 视图」, 没有公文助手 tab
 
 ## 已查证据
 - patcher.log 文件存在, 但只有 OnConnection start 记录, 没有 Patched IsVip
@@ -276,6 +276,6 @@ Get-ChildItem -Path 'docs\', 'README.md' -Recurse -Include *.md | ForEach-Object
 - ILSpy 团队（反编译器）
 - pardeike（Harmony 框架）
 - Pandoc 团队（md ? docx 转换）
-- 「公文高手」原作者团队（功能 + UI 设计 + 模板素材）
+- 「公文助手」原作者团队（功能 + UI 设计 + 模板素材）
 
 未来贡献者会列在这里。

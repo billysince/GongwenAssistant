@@ -91,7 +91,7 @@ $gac = (Get-Item 'C:\Windows\Microsoft.NET\assembly\GAC_MSIL\Local_Wps_Vsto\v4.0
 Get-FileHash $gac -Algorithm SHA256
 ```
 
-期望值（路线 A · Patcher 模式下）：与原作者发布的 `公文高手Wps插件单机版2.4.1\免安装版本\公文高手Wps插件单机版\Local_Wps_Vsto.dll` 完全一致。
+期望值（路线 A · Patcher 模式下）：与原作者发布的 `公文助手Wps插件单机版2.4.1\免安装版本\公文助手Wps插件单机版\Local_Wps_Vsto.dll` 完全一致。
 
 我们**不改 GAC 内的 dll, 也不改原版安装目录的 dll**。
 

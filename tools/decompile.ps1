@@ -1,8 +1,8 @@
 ﻿$ErrorActionPreference = 'Stop'
 
 $ilspyDir = 'D:\工作\20260520\GongwenAssistant\tools\ilspy72'
-$inputDll = 'D:\工作\20260520\公文高手Wps插件单机版2.4.1\免安装版本\公文高手Wps插件单机版\Local_Wps_Vsto.dll'
-$searchDir = 'D:\工作\20260520\公文高手Wps插件单机版2.4.1\免安装版本\公文高手Wps插件单机版'
+$inputDll = 'D:\工作\20260520\公文助手Wps插件单机版2.4.1\免安装版本\公文助手Wps插件单机版\Local_Wps_Vsto.dll'
+$searchDir = 'D:\工作\20260520\公文助手Wps插件单机版2.4.1\免安装版本\公文助手Wps插件单机版'
 $outDir   = 'D:\工作\20260520\GongwenAssistant\src\Local_Wps_Vsto_v2'
 
 if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }

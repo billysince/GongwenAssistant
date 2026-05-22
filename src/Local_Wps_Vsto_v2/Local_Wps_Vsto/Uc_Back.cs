@@ -78,7 +78,7 @@ namespace Local_Wps_Vsto
 			try
 			{
 				string text = DateTime.Now.ToLongDateString().ToString().Replace("/", "-");
-				string path = strTitle + "\\公文高手单机版备份(" + text + ").bfdb";
+				string path = strTitle + "\\公文助手单机版备份(" + text + ").bfdb";
 				LocalZiYuan localZiYuan = new LocalZiYuan();
 				StreamWriter streamWriter = new StreamWriter(path, true, Encoding.Default);
 				SQLiteHelper sQLiteHelper = new SQLiteHelper();

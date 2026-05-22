@@ -54,17 +54,17 @@ Reverse-engineering notice
 
 The C# sources under src/Local_Wps_Vsto_v2/ were produced by automated
 decompilation (ILSpy 7.2.1) of the publicly distributed binary
-"Local_Wps_Vsto.dll" shipped in "公文高手Wps插件单机版2.4.1.exe", followed by
+"Local_Wps_Vsto.dll" shipped in "公文助手Wps插件单机版2.4.1.exe", followed by
 human-applied corrections to make the result compile under csc.exe v4.0.30319,
 and human-applied modifications to:
 
   1. force "UserUtil.IsVip()" and "UserUtil.HasLogin()" to always return true
-  2. rebrand the user-visible label from 「公文高手」 to 「公文助手」
+  2. rebrand the user-visible label from 「公文助手」 to 「公文助手」
 
 This is interoperability-oriented reverse engineering of a binary whose
 original online activation services have been discontinued. We make no claim
 to the original product name, original UI design, or original template
 artworks contained in template/*.docx — these remain the intellectual
-property of the original「公文高手」development team. If you are a rights
+property of the original「公文助手」development team. If you are a rights
 holder and have concerns, please contact us via GitHub Issues and we will
 respond promptly.

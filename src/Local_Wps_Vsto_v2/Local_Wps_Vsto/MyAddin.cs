@@ -1275,7 +1275,7 @@ namespace Local_Wps_Vsto
 			{
 				string text = CommonConfig.strBaseFolder_Common + "\\gwgs.sdf";
 				string text2 = CommonConfig.strBaseFolder + "\\conf\\gwgs.sdf";
-				string text3 = "C:\\公文高手WPS插件\\gwgs.sdf";
+				string text3 = "C:\\公文助手WPS插件\\gwgs.sdf";
 				if (!File.Exists(text))
 				{
 					if (File.Exists(text3))

@@ -5,7 +5,7 @@
 #   1. 全部走 HKEY_CURRENT_USER 注册表分支, 不动 HKLM / GAC / Wow6432Node
 #   2. dll 通过 CodeBase 指向本地路径加载, 不依赖强名 / GAC
 #   3. 完整登记 COM CLSID / ProgId / Office Word Addin / WPS AddinsWL
-#   4. 自动检测已有冲突的旧版「公文高手」注册并提示用户清理
+#   4. 自动检测已有冲突的旧版「公文助手」注册并提示用户清理
 #
 # 用法:
 #   PowerShell -ExecutionPolicy Bypass -File install.ps1 [-InstallDir <path>]
