@@ -19,7 +19,7 @@
 
 ---
 
-## 二、现在能用吗？(状态卡片 · 2026-05-22 15:30 v1.0.8)
+## 二、现在能用吗？(状态卡片 · 2026-05-22 15:58 v1.00)
 
 按"装载 / 渲染 / 功能"三层独立评估:
 
@@ -27,7 +27,7 @@
 |---|---|---|---|
 | 装载层 | 原版 GAC dll 加载 | **OK** | 原版 GAC 强名 dll 通过 HKLM 注册加载, Patcher 在运行时 hook |
 | 装载层 | Patcher (v1.0.8) | **OK** | 12800 bytes, 含 IsVip/HasLogin patch + GetCustomUI rewrite + GetLabel override + click trace + 异常 finalizer |
-| 渲染层 | Ribbon tab 名称 | **OK** | 「**公文助手**」(Patcher 双层覆盖: GetCustomUI XML rewrite + GetLabel Prefix hook) |
+| 渲染层 | Ribbon tab 名称 | **OK** | 「**公文助手 1.00**」(Patcher 双层覆盖: GetCustomUI XML rewrite + GetLabel Prefix hook) |
 | 渲染层 | VIP 状态 | **OK** | 已激活 (Patcher IsVip→return true) |
 | 渲染层 | ribbon 按钮全部渲染 | **OK** | 约 30 个按钮可见 |
 | **功能层** | **点击 ribbon 按钮** | **已验证可调** | patcher.log 出现 `CLICK MyAddin.btnA4_New_Click` 等记录 — **onAction 回调确实被调用** ([#30](docs/踩坑全集.md) 推翻了 #25 结论) |
@@ -37,7 +37,7 @@
 | 兼容性 | Win7 / WPS 旧版本 | 未测试 | 11.x 时代 onAction 是通的, 但已无环境验证 |
 
 **v1.0.8 关键变化**:
-- tab 名从原版的"公文高手单机版2.4.1"改为「公文助手」(双层覆盖: GetCustomUI XML rewrite + GetLabel Prefix)
+- tab 名从原版的"公文高手单机版2.4.1"改为「公文助手 1.00」(双层覆盖: GetCustomUI XML rewrite + GetLabel Prefix)
 - 重大发现: onAction 回调**确实被调用**, 推翻了之前 #25 的错误结论 ([#30](docs/踩坑全集.md))
 - 异常 finalizer 兜底, 按钮点击不再触发 WPS 崩溃恢复界面
 - GitHub 已推送: https://github.com/billysince/GongwenAssistant
@@ -51,7 +51,7 @@
 ![current_state](dist/wps_v2_success.png)
 
 图中可见:
-- ① 顶部 tab 栏「**公文助手**」 ← Patcher 通过 GetCustomUI XML rewrite + GetLabel Prefix hook 双层覆盖改写
+- ① 顶部 tab 栏「**公文助手 1.00**」 ← Patcher 通过 GetCustomUI XML rewrite + GetLabel Prefix hook 双层覆盖改写
 - ② VIP 状态「**已激活**」 ← Patcher IsVip→return true
 - ③ ribbon 区约 30 个按钮全部渲染（红头模板 / 素材搜索 / 范文搜索 / 导入资源 / 备份资源 / 恢复备份 / 写作提词器 / 模糊提示 / 5条提示 / 设为A4 / 一键排版 / 公文标题 / 公文署名 / 公文正文 / 公文附件 / 一级标题 / 二级标题 / 三级标题 / 高级 / 文末日期 / 发送对象 / 数字编号 / 符号 / 页码 / 横页 / 日期 / 朗读校稿 / 检查提纲...）
 - ④ 按钮 onAction **已验证可调** (patcher.log 有 CLICK 记录, 推翻之前 #25 结论)

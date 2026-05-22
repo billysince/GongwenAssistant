@@ -251,10 +251,8 @@ namespace GongwenPatcher
             try
             {
                 // "????????" = \u516c\u6587\u52a9\u624b
-                string newLabel = "\u516c\u6587\u52a9\u624b";
+                string newLabel = "\u516c\u6587\u52a9\u624b 1.00";
 
-                // The original XML has: <tab id="gwgs" insertBeforeMso="TabHome" getLabel="GetLabel">
-                // We want:             <tab id="gwgs" insertBeforeMso="TabHome" label="????????">
                 string old1 = "getLabel=\"GetLabel\"";
                 string rep1 = "label=\"" + newLabel + "\"";
 
@@ -289,7 +287,7 @@ namespace GongwenPatcher
                         string id = idProp.GetValue(__0, null) as string;
                         if (id == "gwgs")
                         {
-                            __result = "\u516c\u6587\u52a9\u624b";
+                            __result = "\u516c\u6587\u52a9\u624b 1.00";
                             return false; // skip original
                         }
                     }
