@@ -280,29 +280,9 @@ namespace GongwenPatcher
                         }
                     }
 
-                    // Also wrap DocWpsUtil + MessageTipsUtil + WpsHelper methods
-                    string[] deepTypes = new[] { "Local_Wps_Vsto.DocWpsUtil", "Local_Wps_Vsto.WpsHelper",
-                        "Local_Wps_Vsto.MessageTipsUtil", "Local_Wps_Vsto.CommonConfig" };
-                    foreach (string tn in deepTypes)
-                    {
-                        Type dt = asm.GetType(tn, false);
-                        if (dt == null) continue;
-                        int dw = 0;
-                        foreach (var m in dt.GetMethods(BindingFlags.Public | BindingFlags.NonPublic |
-                            BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
-                        {
-                            if (m.IsAbstract || m.ContainsGenericParameters) continue;
-                            try
-                            {
-                                harmony.Patch(m,
-                                    prefix: new HarmonyMethod(tracePrefix),
-                                    finalizer: new HarmonyMethod(swallowFinal));
-                                dw++;
-                            }
-                            catch { }
-                        }
-                        Log("  wrapped " + dw + " " + dt.Name + " methods");
-                    }
+                    // Deep diagnostics removed for performance (v1.01).
+                    // DocWpsUtil/WpsHelper/MessageTipsUtil/CommonConfig no longer wrapped.
+                    // These were only needed to debug #33 (count==1 COMException).
                 }
                 else
                 {
@@ -408,13 +388,16 @@ namespace GongwenPatcher
         {
             try
             {
+                string nm = __originalMethod.Name;
+                if (!nm.EndsWith("_Click") && !nm.StartsWith("btn") && !nm.StartsWith("OnAction"))
+                    return true;
+
                 string dir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "GongwenAssistant");
                 string log = Path.Combine(dir, "patcher.log");
                 string extra = "";
-                // On _Click methods, also check wordApp
-                if (__originalMethod.Name.EndsWith("_Click"))
+                if (nm.EndsWith("_Click"))
                 {
                     try
                     {
