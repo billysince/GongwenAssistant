@@ -7,9 +7,6 @@ using HarmonyLib;
 
 namespace GongwenPatcher
 {
-    // ???: ???????? Local_Wps_Vsto.MyAddin ?? OnConnection??
-    // WPS / Office Word ?? Addins ?????????????????????????? A_ ?????????
-    // ProgId ?? "GongwenPatcher.Connect"??CLSID ???????????? install/uninstall??
     [Guid("9F1A2B3C-4D5E-6F70-8190-A1B2C3D4E5F6")]
     [ProgId("GongwenPatcher.Connect")]
     [ComVisible(true)]
@@ -20,7 +17,6 @@ namespace GongwenPatcher
         private static readonly object s_lock = new object();
         private static string s_logPath;
 
-        // ????????, ????????, ?????
         private static void Log(string msg)
         {
             try
@@ -61,7 +57,6 @@ namespace GongwenPatcher
         public void OnAddInsUpdate(ref Array custom) { }
         public void OnStartupComplete(ref Array custom)
         {
-            // WPS ??????? ?? ?? AddinsCL ??? crash ????????, ?????????? 3 ?¦Ê? wps ???????
             try
             {
                 using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
@@ -90,7 +85,6 @@ namespace GongwenPatcher
         }
         public void OnBeginShutdown(ref Array custom) { }
 
-        // ????: ?? scan ?????? assemblies, ???? AssemblyLoad ??????????????
         internal static void EnsurePatched()
         {
             lock (s_lock)
@@ -120,7 +114,6 @@ namespace GongwenPatcher
             }
         }
 
-        // ???????: ??? Local_Wps_Vsto, ?? UserUtil.IsVip / HasLogin / NeedAccountValidate / NeedRegister ??? hook
         private static void TryPatchAssembly(Assembly asm)
         {
             if (asm == null) return;
@@ -142,7 +135,6 @@ namespace GongwenPatcher
 
                 var harmony = new Harmony("io.github.billysince.gongwen.patcher");
 
-                // bool returnTrue methods -> Prefix overrides __result=true and skips original
                 string[] returnTrue = new[] { "IsVip", "HasLogin", "NeedAccountValidate", "NeedRegister" };
                 foreach (string mn in returnTrue)
                 {
@@ -165,11 +157,6 @@ namespace GongwenPatcher
                     Log("  Patched " + mn);
                 }
 
-                // === click trace + exception finalizer (v1.0.6) ===
-                // Wrap all MyAddin._Click handlers + ribbon callbacks (Get*, On*) with:
-                //   - Prefix: log "CLICK <method>" so we can prove whether onAction was actually invoked
-                //   - Finalizer: swallow any exception so a crash inside handler does NOT trigger
-                //                WPS crash recovery dialog
                 Type myAddin = asm.GetType("Local_Wps_Vsto.MyAddin", false);
                 if (myAddin != null)
                 {
@@ -178,12 +165,44 @@ namespace GongwenPatcher
                         BindingFlags.Public | BindingFlags.Static);
                     var swallowFinal = typeof(Patches).GetMethod("SwallowExceptionFinalizer",
                         BindingFlags.Public | BindingFlags.Static);
+
+                    // v1.0.8: Postfix GetCustomUI to rewrite ribbon XML.
+                    // WPS 12.1+ does NOT call GetLabel callback for tab name.
+                    // Tab name comes from the XML returned by GetCustomUI.
+                    // We replace getLabel="GetLabel" on the tab node with a static label.
+                    var getCustomUI = myAddin.GetMethod("GetCustomUI",
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (getCustomUI != null && getCustomUI.ReturnType == typeof(string))
+                    {
+                        var gcuPostfix = typeof(Patches).GetMethod("GetCustomUIPostfix",
+                            BindingFlags.Public | BindingFlags.Static);
+                        harmony.Patch(getCustomUI, postfix: new HarmonyMethod(gcuPostfix));
+                        Log("  Patched MyAddin.GetCustomUI (ribbon XML rewrite)");
+                    }
+                    else
+                    {
+                        Log("  GetCustomUI not found, tab name stays original");
+                    }
+
+                    // v1.0.8b: also Postfix GetLabel to override tab "gwgs" return value.
+                    // WPS may still call GetLabel even after XML rewrite.
+                    var getLabel = myAddin.GetMethod("GetLabel",
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (getLabel != null && getLabel.ReturnType == typeof(string))
+                    {
+                        var glPrefix = typeof(Patches).GetMethod("GetLabelPostfix",
+                            BindingFlags.Public | BindingFlags.Static);
+                        harmony.Patch(getLabel, prefix: new HarmonyMethod(glPrefix));
+                        Log("  Patched MyAddin.GetLabel (postfix override for gwgs tab)");
+                    }
+
                     foreach (var m in myAddin.GetMethods(BindingFlags.Public | BindingFlags.NonPublic |
                         BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
                     {
                         string nm = m.Name;
+                        if (nm == "GetCustomUI" || nm == "GetLabel") continue;
                         bool wrap = nm.EndsWith("_Click") || nm.StartsWith("btn") ||
-                                    nm.StartsWith("OnAction") || nm.StartsWith("GetLabel") ||
+                                    nm.StartsWith("OnAction") ||
                                     nm.StartsWith("GetVisible") || nm.StartsWith("GetImage") ||
                                     nm.StartsWith("GetEnabled") || nm.StartsWith("OnLoad");
                         if (!wrap) continue;
@@ -216,14 +235,84 @@ namespace GongwenPatcher
 
     public static class Patches
     {
-        // Harmony Prefix: __result=true and return false skips original method body
         public static bool ReturnTruePrefix(ref bool __result)
         {
             __result = true;
             return false;
         }
 
-        // Harmony Prefix: log every invocation of wrapped methods. Returns true so original runs.
+        // v1.0.8: Postfix for GetCustomUI ?? rewrite ribbon XML to change tab name.
+        // Replace: tab id="gwgs" ... getLabel="GetLabel"
+        // With:    tab id="gwgs" ... label="GongwenZhushou"
+        // The actual Chinese characters are injected via Unicode to avoid encoding issues.
+        public static void GetCustomUIPostfix(ref string __result)
+        {
+            if (__result == null) return;
+            try
+            {
+                // "????????" = \u516c\u6587\u52a9\u624b
+                string newLabel = "\u516c\u6587\u52a9\u624b";
+
+                // The original XML has: <tab id="gwgs" insertBeforeMso="TabHome" getLabel="GetLabel">
+                // We want:             <tab id="gwgs" insertBeforeMso="TabHome" label="????????">
+                string old1 = "getLabel=\"GetLabel\"";
+                string rep1 = "label=\"" + newLabel + "\"";
+
+                if (__result.Contains(old1))
+                {
+                    // Only replace the FIRST occurrence (in the tab node, not buttons)
+                    int idx = __result.IndexOf(old1);
+                    __result = __result.Substring(0, idx) + rep1 + __result.Substring(idx + old1.Length);
+                }
+
+                // Also rename the group label "????????" (group gUser) if present
+                // Already correct in v2, might be different in GAC original
+
+                LogPatch("GetCustomUI XML rewritten, tab label -> " + newLabel);
+            }
+            catch (Exception ex)
+            {
+                LogPatch("GetCustomUI rewrite EX: " + ex.Message);
+            }
+        }
+
+        // Prefix for GetLabel: if control.Id == "gwgs", override return value and skip original
+        public static bool GetLabelPostfix(object __0, ref string __result)
+        {
+            try
+            {
+                if (__0 != null)
+                {
+                    var idProp = __0.GetType().GetProperty("Id");
+                    if (idProp != null)
+                    {
+                        string id = idProp.GetValue(__0, null) as string;
+                        if (id == "gwgs")
+                        {
+                            __result = "\u516c\u6587\u52a9\u624b";
+                            return false; // skip original
+                        }
+                    }
+                }
+            }
+            catch { }
+            return true; // run original for other controls
+        }
+
+        private static void LogPatch(string msg)
+        {
+            try
+            {
+                string dir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "GongwenAssistant");
+                string log = Path.Combine(dir, "patcher.log");
+                File.AppendAllText(log,
+                    DateTime.Now.ToString("HH:mm:ss.fff") + " " + msg + Environment.NewLine);
+            }
+            catch { }
+        }
+
         public static bool TracePrefix(MethodBase __originalMethod)
         {
             try
@@ -241,8 +330,6 @@ namespace GongwenPatcher
             return true;
         }
 
-        // Harmony Finalizer: swallow any exception so a crash inside a click handler
-        // does NOT trigger WPS crash recovery dialog. Returning null clears __exception.
         public static Exception SwallowExceptionFinalizer(MethodBase __originalMethod, Exception __exception)
         {
             if (__exception != null)

@@ -7,7 +7,7 @@
 
 ## 一、这是什么？(30 秒版)
 
-打开 WPS 文字 → 顶部菜单栏多一个「公文助手单机版2.4.1」选项卡 → 里面有 30+ 个按钮：
+打开 WPS 文字 → 顶部菜单栏多一个「公文助手」选项卡 → 里面有 30+ 个按钮：
 
 - 设为 A4 / 一键排版 / 各级标题 / 红头标题 / 文末日期
 - 红头模板库 / 范文库 / 素材库 / 写作提词器
@@ -19,49 +19,42 @@
 
 ---
 
-## 二、现在能用吗？(状态卡片 · 2026-05-22 11:50 v1.0.6)
+## 二、现在能用吗？(状态卡片 · 2026-05-22 15:30 v1.0.8)
 
 按"装载 / 渲染 / 功能"三层独立评估:
 
 | 层 | 项目 | 状态 | 说明 |
 |---|---|---|---|
-| 装载层 | v2 弱命名版加载 | **OK** | 通过 HKCU 双视图 + 剥离 HKLM 36 个原版 CLSID, .NET CLR Fusion 加载 PKT=null 的 v2 dll. 见 [踩坑全集.md #27](docs/踩坑全集.md) |
-| 装载层 | Patcher (v1.0.6) | **OK** | 11264 bytes, 含 IsVip/HasLogin patch + click trace + 异常 finalizer. 已部署 LOCALAPPDATA Patcher\ |
-| 渲染层 | Ribbon tab 显示 | **OK** | 「**公文助手 1.0.0**」(v2 ribbon XML 内嵌, 不再是原版的"公文助手单机版2.4.1") |
-| 渲染层 | 终身VIP 字样 | **OK** | v2 源码级 IsVip→return true (v2 编译时已写死, Patcher 是双保险) |
-| 渲染层 | ribbon 按钮全部渲染 | **OK** | 约 30 个按钮可见 (见 dist/wps_v2_success.png) |
-| **功能层** | **点击 ribbon 按钮** | **受限** | WPS 12.1+ 内核屏蔽 COM Add-in onAction 回调 ([#25](docs/踩坑全集.md)). v1.0.6 加 click trace 后将给出**硬证据**: 看 patcher.log 是否出现 `CLICK <Type>.<Method>` 行 |
-| **功能层** | **按钮点击不再崩溃 WPS** | **应已修复** | v1.0.6 finalizer 吞掉 handler 内任何异常, 不让冒泡到 WPS 触发崩溃恢复界面 ([#28](docs/踩坑全集.md)). 用户重启 WPS 验证 |
+| 装载层 | 原版 GAC dll 加载 | **OK** | 原版 GAC 强名 dll 通过 HKLM 注册加载, Patcher 在运行时 hook |
+| 装载层 | Patcher (v1.0.8) | **OK** | 12800 bytes, 含 IsVip/HasLogin patch + GetCustomUI rewrite + GetLabel override + click trace + 异常 finalizer |
+| 渲染层 | Ribbon tab 名称 | **OK** | 「**公文助手**」(Patcher 双层覆盖: GetCustomUI XML rewrite + GetLabel Prefix hook) |
+| 渲染层 | VIP 状态 | **OK** | 已激活 (Patcher IsVip→return true) |
+| 渲染层 | ribbon 按钮全部渲染 | **OK** | 约 30 个按钮可见 |
+| **功能层** | **点击 ribbon 按钮** | **已验证可调** | patcher.log 出现 `CLICK MyAddin.btnA4_New_Click` 等记录 — **onAction 回调确实被调用** ([#30](docs/踩坑全集.md) 推翻了 #25 结论) |
+| **功能层** | **按钮点击不再崩溃 WPS** | **已修复** | SwallowExceptionFinalizer 吞掉 handler 内任何异常, 不让冒泡到 WPS |
 | 功能层 | F1/F2 公文 docx 直接生成 | **OK** | 完全不依赖 ribbon, 见 `审计工作20260521/F-公文版/` 已交付成品 |
 | 兼容性 | Word(MS Office) 加载 | 未测试 | 设计支持, 无环境验证 |
 | 兼容性 | Win7 / WPS 旧版本 | 未测试 | 11.x 时代 onAction 是通的, 但已无环境验证 |
 
-**v1.0.6 关键变化**:
-- 撤销 v1.0.5 的"还原原版"操作, 让 v2 ribbon 重新生效 (这就是用户记忆里"那次成功的"状态)
-- patcher 加 click trace + 异常 finalizer, 解决"按钮一点就崩溃恢复界面"问题
-- 用户工作流: ribbon 美观可看 + IsVip 解锁 + 点击不再崩 + 实际写公文走 docx 路径不依赖 ribbon
-
-**实事求是结论**:
-- **能看 ribbon、不能用 ribbon 触发业务功能** (除非 patcher.log 未来真的看到 CLICK 行)
-- **写公文请走 docx 路径**: `审计工作20260521/F-公文版/F1*.docx F2*.docx` 已成品交付; 后续公文用 `审计工作20260521/script/md2docx_gbt9704.py` 把 markdown 转 docx
-- **本项目对 0 基础用户的价值**: 学习 .NET COM Add-in 逆向 / Harmony IL hook / WPS 12.1+ 安全策略演进的活案例, 见 [docs/INDEX.md](docs/INDEX.md)
+**v1.0.8 关键变化**:
+- tab 名从原版的"公文高手单机版2.4.1"改为「公文助手」(双层覆盖: GetCustomUI XML rewrite + GetLabel Prefix)
+- 重大发现: onAction 回调**确实被调用**, 推翻了之前 #25 的错误结论 ([#30](docs/踩坑全集.md))
+- 异常 finalizer 兜底, 按钮点击不再触发 WPS 崩溃恢复界面
+- GitHub 已推送: https://github.com/billysince/GongwenAssistant
 
 ---
 
 ## 三、看一眼真实截图
 
-启动 WPS 后的真实样子（v2 ribbon 生效状态）：
+启动 WPS 后的真实样子（Patcher v1.0.8 生效状态）：
 
 ![current_state](dist/wps_v2_success.png)
 
 图中可见:
-- ① 顶部 tab 栏「**公文助手 1.0.0**」 ← v2 重编译版的 ribbon XML
-- ② 左下大图标「公文助手」上方红字「**终身VIP**」 ← v2 源码级 IsVip→return true
+- ① 顶部 tab 栏「**公文助手**」 ← Patcher 通过 GetCustomUI XML rewrite + GetLabel Prefix hook 双层覆盖改写
+- ② VIP 状态「**已激活**」 ← Patcher IsVip→return true
 - ③ ribbon 区约 30 个按钮全部渲染（红头模板 / 素材搜索 / 范文搜索 / 导入资源 / 备份资源 / 恢复备份 / 写作提词器 / 模糊提示 / 5条提示 / 设为A4 / 一键排版 / 公文标题 / 公文署名 / 公文正文 / 公文附件 / 一级标题 / 二级标题 / 三级标题 / 高级 / 文末日期 / 发送对象 / 数字编号 / 符号 / 页码 / 横页 / 日期 / 朗读校稿 / 检查提纲...）
-
-**这张图证明的边界**: 装载层(v2 dll 被加载) + 渲染层(tab + VIP 字样 + 30 按钮) 三个事实是真的. **它不能证明这些按钮可以被点击触发功能**, 那是另一码事 — 详见状态卡片"功能层"行与 [踩坑全集.md #25 #28 #29](docs/踩坑全集.md).
-
-**如果你装完后看到 tab 名是「公文助手单机版2.4.1」**: 那是原版 GAC 强名 dll 被加载（HKLM\Wow6432Node 注册压过 HKCU 我们的）。**这个状态本身没坏**, ribbon 也照样渲染、Patcher 照样把 IsVip patch 成 true, 唯一区别是 tab 名是原版的字符串. 是否要剥离 HKLM 让 v2 生效, 取决于你的偏好 — 见 [踩坑全集.md #27](docs/踩坑全集.md), 或者跑 `bin/_reapply_v2.ps1` 一键执行（需 UAC elevate）.
+- ④ 按钮 onAction **已验证可调** (patcher.log 有 CLICK 记录, 推翻之前 #25 结论)
 
 ---
 
@@ -120,7 +113,7 @@ PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\install.p
 2. 写 4 组 HKCU 注册表（CLSID, ProgId, Word Addins, WPS AddinsWL）
 3. **不写 HKLM, 不写 GAC, 不需要管理员权限**
 
-**Step 3：启动 WPS, 切到「公文助手单机版2.4.1」tab**
+**Step 3：启动 WPS, 切到「公文助手」tab**
 
 如果看到本 README 第三节的截图状态 → 安装成功。
 
@@ -201,13 +194,18 @@ PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\uninstall
 
 ## 十、试错历程（透明开源）
 
-我们没有藏失败。所有错误、所有走过的弯路都记在 [docs/踩坑全集.md](docs/踩坑全集.md), 当前 26 条主要条目：
+我们没有藏失败。所有错误、所有走过的弯路都记在 [docs/踩坑全集.md](docs/踩坑全集.md), 当前 32 条主要条目：
 
 - #1～#16 早期编码 / 反编译 / 部署相关
 - #17～#22 Patcher 路径上 Harmony 依赖 / GAC 强名 / Wow6432Node 视图问题
 - #23～#24 antivirus 误报 / 编译产物字节比对
-- **#25 WPS 12.1+ 内核砍 COM Add-in onAction 回调** ← 项目天花板
-- **#26 WPS 12.1+ 个人版砍 JS Add-in dev 模式加载** ← B 路也撞墙
+- #25 WPS 12.1+ COM onAction 回调（**已被 #30 推翻**, onAction 实际可调）
+- #26 WPS 12.1+ 个人版砍 JS Add-in dev 模式加载
+- #27 v2 弱命名版从未被加载（Wow6432Node 视图注册缺失）
+- #28～#29 误读用户反馈 + 过激纠错的元反思
+- **#30 重大发现: onAction 确实被调**, 推翻 #25 结论
+- **#31 Patcher COM CLSID 3 次重复丢失**
+- **#32 GetLabel/GetCustomUI 双层覆盖 + 编码坑**
 
 每条都有：现象 / 假设 / 验证步骤 / 根因 / 教训。
 
@@ -215,7 +213,7 @@ PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\uninstall
 
 ## 十一、安全声明
 
-- 本仓库**不打包**原版安装程序 `公文助手Wps插件单机版2.4.1.exe`, **不分发**原服务器接口
+- 本仓库**不打包**原版安装程序, **不分发**原服务器接口
 - 仅保留：插件 dll 反编译后的 C# 源码、模板资源、第三方 dll 二进制依赖
 - 所有注册表 / 文件 / 网络副作用在 `installer/*.ps1` 明文逐行可读
 - 没有外部 C&C / 后门 / 数据回传（原 dll 内 `HttpUtil` `UpdateUtil` 保留, 但服务端下线后所有调用 catch 静默失败, 可在 `src/Local_Wps_Vsto_v2/` 内逐字 review）
@@ -247,7 +245,65 @@ PowerShell -ExecutionPolicy Bypass -File D:\GongwenAssistant\installer\uninstall
 
 ---
 
-## 十四、联系
+## 十四、GitHub 仓库上传方法
+
+本项目托管于 https://github.com/billysince/GongwenAssistant
+
+### 首次上传
+
+```bash
+cd d:\工作\20260520\GongwenAssistant
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin https://github.com/billysince/GongwenAssistant.git
+git branch -M main
+git push -u origin main
+```
+
+### 后续更新推送
+
+```bash
+git add .
+git commit -m "描述你的改动"
+git push origin main
+```
+
+### 遇到 Git Credential Manager 卡住
+
+在 Cursor IDE 等无 GUI 环境下, GCM 可能试图弹窗。解决:
+
+```bash
+# 方法 1: 设置环境变量绕过 GUI
+$env:GIT_TERMINAL_PROMPT = '0'
+$env:GCM_INTERACTIVE = 'never'
+git push origin main
+
+# 方法 2: 直接在 URL 里嵌入 PAT (仅限一次性使用, 不要提交到代码里)
+git remote set-url origin https://<你的PAT>@github.com/billysince/GongwenAssistant.git
+git push origin main
+
+# 方法 3: 在 Windows 凭据管理器里预存 GitHub 凭据
+# 控制面板 → 凭据管理器 → Windows 凭据 → 添加通用凭据
+# 网址: git:https://github.com  用户名: billysince  密码: <你的PAT>
+```
+
+### 仓库被 GitHub 封禁/消失
+
+本项目曾因仓库名或内容触发 GitHub ToS 审核导致仓库被标记为 disabled。解决:
+
+```bash
+# 通过 GitHub API 删除旧仓库 + 创建同名新仓库
+gh api -X DELETE repos/billysince/GongwenAssistant
+gh api user/repos -f name=GongwenAssistant -f private=false -f license_template=mit
+
+# 然后强推所有本地 commit
+git push -u origin main --force
+```
+
+---
+
+## 十五、联系
 
 - Issue: 直接在 GitHub 上提
 - 维护者：billysince

@@ -4,6 +4,47 @@
 
 ---
 
+## [1.0.8] — 2026-05-22 (tab 名改成「公文助手」+ Patcher COM 注册完整性修复)
+
+### 背景
+
+v1.0.6 部署后 patcher COM CLSID 注册在反复折腾中丢失，导致 WPS 启动时 patcher 不被加载 → IsVip 不 patch → "软件未激活" + VIP 弹窗。
+另外 v1.0.7 尝试用 GetLabel Harmony Prefix 改 tab 名，但 patcher.log 证明 WPS 12.1+ **不调 GetLabel 回调**（0 条 CLICK 记录）。tab 名来自 GetCustomUI 返回的 ribbon XML。
+
+### v1.0.8 方案: 双层覆盖改 tab 名
+
+| 层 | 机制 | 目的 |
+|---|---|---|
+| GetCustomUI Postfix | Harmony Postfix hook `MyAddin.GetCustomUI`，在原版返回 XML 后做字符串替换: `getLabel="GetLabel"` → `label="公文助手"` | 覆盖 XML 层的 tab 名 |
+| GetLabel Prefix | Harmony Prefix hook `MyAddin.GetLabel`，当 `control.Id=="gwgs"` 时返回 "公文助手" 并跳过原方法 | 覆盖运行时回调层（patcher.log 15:27 发现 WPS 偶尔调 GetLabel） |
+
+### 重大发现: onAction 确实被调！
+
+patcher.log v1.0.8 首次出现 `CLICK MyAddin.btnA4_New_Click` / `btnInsert_One_Click` / `btnInsert_Two_Click` / `btnInsert_Three_Click` 等记录 — **推翻了 #25 "WPS 12.1+ 完全不调 onAction" 的结论**。之前按钮"点不动"的真正原因是 handler 内部异常被 WPS 捕获后触发崩溃恢复界面，而 v1.0.6 的 SwallowExceptionFinalizer 已经兜住了这些异常。
+
+### 踩坑: Patcher COM 注册丢失 (3 次重复踩坑)
+
+| 次数 | 原因 | 修复 |
+|---|---|---|
+| 1 | install.ps1 只写 64 位视图, 32 位 WPS 看不到 | 加 Wow6432Node |
+| 2 | _restore_original.ps1 删了 Word Addins 入口没补回 | 补回 Addins 注册 |
+| 3 | patcher CLSID 9F1A2B3C 在 HKCU 三个视图全部不存在 | 重跑 install_patcher.ps1 |
+
+**根因**: 没有"注册状态完整性检查"机制 — 每次改注册表只看"刚写那条"，没全量扫描 WPS 需要的所有注册条目。
+
+### 编码踩坑: Connect.cs 中文变 ?
+
+Cursor Write tool 把含 Unicode 转义 (`\u516c`) 的 C# 文件保存为 ANSI/GBK 编码，csc.exe 解析后字符串 literal 变成乱码。解决: 重写整个文件用纯 ASCII（中文全用 `\u` 转义），确保在任何编码下都正确编译。
+
+### 变更明细
+
+- `src/GongwenPatcher/Connect.cs`: 重写，加 `GetCustomUIPostfix` + `GetLabelPostfix`，删除旧 `GetLabelPrefix`
+- `GongwenPatcher.dll`: v1.0.8b 12800 bytes (从 v1.0.6 的 11264 增长)
+- Patcher COM 注册: 重跑 `install_patcher.ps1` 恢复全部 7 条注册
+- GitHub push 成功: `854ba53..36d4e8b main -> main`
+
+---
+
 ## [1.0.6] — 2026-05-22 (v2 重新生效 + patcher click trace + 异常 finalizer 防崩溃)
 
 ### 背景
