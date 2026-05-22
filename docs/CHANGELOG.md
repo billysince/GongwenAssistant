@@ -4,6 +4,60 @@
 
 ---
 
+## [1.0.4] — 2026-05-22 (0 基础用户开源文档体系 · docs 大扩张)
+
+**这一版没有功能改动**, 全部为文档工程。完成后整个项目对 0 基础用户的可达性显著提升。
+
+### 新增文档（7 份, 全部 UTF-8 BOM）
+
+| 文件 | 字节 | 用途 |
+|---|---|---|
+| `docs/INDEX.md` | 6,033 | 16 份文档导航, 按受众/问题/目录三视图 |
+| `docs/学习路径.md` | 6,489 | 5min/30min/2h/半天 四档阅读路线 + 学习地图 |
+| `docs/术语表.md` | 15,870 | 23 词条大白话: COM/CLSID/Harmony/IL/GAC/Wow6432Node/PE/PKT/VSTO/wpsjs |
+| `docs/QUICKSTART.md` | 7,361 | 5 分钟无代码上手, 含排查表 + 替代方案 |
+| `docs/FAQ.md` | 11,606 | 13 高频问题, 短答/长答/验证源三段式 |
+| `docs/SECURITY.md` | 10,277 | 字节级 SHA256 自证 + 副作用清单 + 独立审计步骤 |
+| `docs/CONTRIBUTING.md` | 8,016 | Issue/PR 模板 + Conventional Commits 规范 |
+
+### 重写
+
+- `README.md` (10,382 字节) 全文重写
+  - 新结构 14 节: 一句话讲清楚 → 状态卡片 → 截图为证 → 决策树 → 安装 → 卸载 → 能/不能做 → 动机故事 → 工作原理 → 试错链接 → 安全声明 → 协议 → 文档导航 → 联系
+  - 用 `dist/wps_now.png` 真实截图替代术语
+  - 状态卡片三色直观: tab 显示OK / VIP 已激活OK / docx 直接生成OK / onAction 受限 / Word 未测 / 旧版未测
+
+### 文档体系原则确立
+
+1. **0 基础友好** — 第一次出现的术语必须在术语表有大白话解释
+2. **可追溯** — 每个技术结论附验证步骤
+3. **如实** — 所有失败、所有走错的弯路、所有当前未解决的限制全部如实写
+4. **稳定优先** — 已交付内容不删, 修订用 CHANGELOG 增量追加
+5. **统一编码** — 全部 markdown UTF-8 with BOM
+
+### 事实链锁定（此版本时刻）
+
+- WPS PID 37448 主窗口已加载 F1 公文 docx
+- ribbon tab `公文高手单机版2.4.1` 当前 active 状态显示 OK
+- `终身VIP - 已激活` 字样可见
+- patcher.log 末: `10:03:54 Patched IsVip / Patched HasLogin / cleared CL entries=1`
+- 截图证据 `dist/wps_now.png` (45,694 bytes) 已纳入 README
+
+### 项目当前态势
+
+- **已交付**: F1 + F2 公文 docx 成品（在 `审计工作20260521/F-公文版/`）
+- **已交付**: ribbon tab 显示 + VIP 字样改写 + IL hook
+- **天花板**: WPS 12.1+ 个人版砍 COM onAction (#25) 与 JS Add-in dev 模式 (#26)
+- **未来路径**: 等 WPS 内核开放 / 迁 MS Office Word / 独立 EXE 走 COM 客户端
+
+### 不变
+
+- 所有可执行代码（patcher dll / runtime dll / installer.ps1）字节零修改
+- 注册表写入 / 文件副作用 / 网络行为完全无变化
+- v1.0.3 已交付的研究资产全部保留
+
+---
+
 ## [1.0.3] — 2026-05-22 (B 路调查报告 · ribbon 集成全面收口)
 
 **这一版没有功能改动**。把 [踩坑全集 #26] 的实验结果与最终决断如实落档。

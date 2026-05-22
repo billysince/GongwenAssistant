@@ -44,7 +44,7 @@
 
 | 文件 | 用途 |
 |---|---|
-| [部署演练指南.md](部署演练指南.md) | 在多种环境上的部署 dry-run 步骤 |
+| [发布推送指南.md](发布推送指南.md) | 第一次推送到 GitHub 的全流程 |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录, 每个版本解决了什么、踩了什么 |
 
 ---
@@ -86,7 +86,7 @@ docs/
 ├── Patcher方案.md         ← Harmony IL hook 方案
 ├── 工程复盘.md            ← 决策点时间线
 ├── 踩坑全集.md            ← 26 条踩坑
-├── 部署演练指南.md        ← 部署 dry-run
+├── 发布推送指南.md        ← 部署 dry-run
 └── CHANGELOG.md          ← 版本记录
 ```
 
