@@ -39,7 +39,43 @@ UI 来自原版插件，业务功能保持 100% 兼容；底层 dll 经反编译
 
 ## 两条部署路线
 
-本仓库同时维护两条经过完整验证的部署路线，你可以按自己的偏好二选一：
+本仓库同时维护两条经过完整验证的部署路线，你可以按自己的偏好二选一。
+
+### 30 秒选路线决策树（v1.0.1）
+
+```
+你机器里现在的状态？
+│
+├── 已经装过原版「公文高手 WPS 插件单机版 2.4.1」
+│       └─→ 路线 A · Patcher（推荐）
+│            原版 dll 不动，只额外装 Patcher，下次启动 WPS 自动 hook
+│            参考: docs/Patcher方案.md, 安装脚本: src/GongwenPatcher/install_patcher.ps1
+│
+├── 没装过原版，从零开始
+│       └─→ 路线 B · 自家重编译版
+│            一键 install.ps1, 把 runtime/ 全套拷到 LOCALAPPDATA + 写 HKCU 注册表
+│            参考: docs/INSTALL.md, 安装脚本: installer/install.ps1
+│
+└── 想两条都装试试 / 兼容性测试
+        └─→ 都装也行，verify.ps1 (Auto 模式) 会同时检测两条路线
+             两条 ProgId 不同 (Local_Wps_Vsto.MyAddin vs A_GongwenPatcher.Connect)
+             路线 A 在 WPS 进程内会自动接管 B 路线 dll 的 IL hook，行为一致
+             生产环境建议二选一，避免双重诊断面
+```
+
+发布产物 `dist/GongwenAssistant-1.0.1-win.zip` 同时打包了两条路线的所有资产：
+
+```
+GongwenAssistant-1.0.1-win.zip
+├── runtime/             ← 路线 B 的弱命名 dll + 第三方依赖 + 模板
+├── installer/           ← 路线 B 的安装脚本 (install.ps1, uninstall.ps1, verify.ps1)
+├── patcher/             ← 路线 A 的二进制 (GongwenPatcher.dll, 0Harmony.dll, install_patcher.ps1, uninstall_patcher.ps1)
+├── docs/                ← 9 份完整文档
+├── README.md
+└── LICENSE
+```
+
+解压后按上面的决策树，选一条路线运行对应的安装脚本即可。
 
 ### 路线 A · Patcher（推荐）
 

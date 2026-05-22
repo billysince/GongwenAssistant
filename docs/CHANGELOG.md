@@ -4,6 +4,73 @@
 
 ---
 
+## [1.0.1] — 2026-05-22
+
+新增**路线 A · Patcher**（运行时 IL 注入），与原有的路线 B（自家重编译）并行维护。两条路线**互斥**，二选一安装。
+
+### 新增
+
+- 全新子项目 `src/GongwenPatcher/`，独立的 WPS Word COM Add-in，ProgId `A_GongwenPatcher.Connect`：
+    - `Connect.cs`（184 行）：实现 `IDTExtensibility2`，在 `OnConnection` 时订阅 `AppDomain.AssemblyLoad`，等 `Local_Wps_Vsto.dll` 进入 AppDomain 时立即用 [Harmony](https://github.com/pardeike/Harmony) 把 `UserUtil.IsVip` / `HasLogin` 的 IL 替换为 `return true`
+    - `Extensibility.cs`（51 行）：自带最小 `IDTExtensibility2` 接口定义，不依赖 Office PIA
+    - `OnStartupComplete` 主动清理 WPS `AddinsCL` 误报，避免累计 3 次后 add-in 被自动禁用
+- `lib/0Harmony.dll`（Lib.Harmony.Fat 2.3.6 单文件版，2.2 MB）—— 自包含全部 MonoMod.* 依赖
+- 安装/卸载脚本 `install_patcher.ps1` / `uninstall_patcher.ps1`：
+    - 全程 HKCU 注册（Word\Addins + Kingsoft AddinsWL + CLSID + ProgId）
+    - **强制使用 32-bit 注册表视图**写入 `HKCU\Software\Classes`，避免 32-bit WPS 看不到的坑
+    - 加性更新：保留宿主原有的 `AddinsWL` 白名单，不重建 key
+- `docs/Patcher方案.md`（116 行）：路线 A 完整原理 / 文件构成 / 安装步骤 / 自检 / 卸载
+- README 顶部「两条部署路线」对比表
+- `docs/踩坑全集.md` 续写 6 条新坑（#19~#24）：
+    - [#19] 32-bit WPS 看不到 64-bit HKCU 注册（COM 加载链最深的坑）
+    - [#20] `New-Item -Force` 把同 key 下所有 value 一次性清空
+    - [#21] Harmony 2.3+ 拆包 → MonoMod.Backports 找不到，必须用 Fat 单文件
+    - [#22] WPS AddinsCL 误报 crash，三次累计后自动禁用插件
+    - [#23] PowerShell 5.1 反复 Add-Type 同名类型卡死
+    - [#24] WPS KPromeMainWindow 自绘控件不响应模拟点击 / 不在 UIAutomation 树
+
+### 修复
+
+- `docs/Patcher方案.md` 在 v1.0.0 commit 时是 GBK 编码（漏过了 [#16] 那一轮转码），本版本统一为 UTF-8 with BOM；docs/ 下 8 份 md 现全部 BOM
+- 修正 `installer/install.ps1` 中所有 `New-Item -Force` 的"重建语义"，改为"先 Test-Path 再 Add"，避免破坏宿主已有注册表结构
+
+### 验证证据
+
+实测平台：Windows Server 2022 + WPS 12.1.0.26375 (32-bit)。
+
+- patcher.log 一手日志：
+    ```
+    OnConnection start mode=ext_cm_Startup
+    AssemblyLoad subscribed
+    Local_Wps_Vsto detected: PublicKeyToken=475a36b05c42bd98
+    UserUtil OK
+      Patched IsVip
+      Patched HasLogin
+    OnStartupComplete cleared CL entries=1
+    ```
+- WPS 内点击智能公文按钮，原版的"此功能仅限 VIP 用户使用"绿条 → 替换为"✅ 已进入智能公文模式"
+- 截图证据：`dist/wps_patched_ribbon.png`、`dist/after_real_click.png`、`dist/final_verify.png`
+- COM 实例化验证（32-bit PowerShell）：
+    ```
+    Type: Local_Wps_Vsto.MyAddin
+    UserUtil.IsVip()  = True
+    UserUtil.HasLogin() = True
+    ```
+
+### 与路线 B 的关系
+
+| 维度 | 路线 A（Patcher） | 路线 B（自家重编译） |
+|---|---|---|
+| 是否动原版 dll | 否（字节零修改） | 否（不动原版，但自家重编了一份） |
+| 是否需要 GAC | 否 | 否 |
+| 是否需要管理员 | 否 | 否 |
+| 是否依赖 Harmony | 是（2.2 MB 额外二进制） | 否 |
+| 升级原版兼容性 | 强（自动接管新版本同 IL 函数） | 弱（要重新反编译） |
+| 自家二进制审计面 | 小（只有 Patcher 几百行 + Harmony 三方） | 大（整个 1.4 MB dll） |
+| 适合人群 | 已装过原版、想无感升级 | 未装原版、希望全自家可读 |
+
+---
+
 ## [1.0.0] — 2026-05-21
 
 首个正式版本。从原版「公文高手 WPS 插件单机版 v2.4.1」逆向工程产出。

@@ -22,7 +22,7 @@
 # ============================================================================
 
 param(
-    [string]$Version = '1.0.0',
+    [string]$Version = '1.0.1',
     [string]$OutDir  = ''
 )
 
@@ -31,7 +31,7 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-if (-not $OutDir) { $OutDir = $repoRoot }
+if (-not $OutDir) { $OutDir = Join-Path $repoRoot 'dist' }
 if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Force -Path $OutDir | Out-Null }
 
 $staging = Join-Path $env:TEMP ("gw_pack_" + [Guid]::NewGuid().ToString('N'))
@@ -48,15 +48,33 @@ Write-Host ''
 $pkgRoot = Join-Path $staging ("GongwenAssistant-" + $Version)
 New-Item -ItemType Directory -Force -Path $pkgRoot | Out-Null
 
-# runtime 全量
+# runtime 全量 (路线 B / 自家重编译版资产)
 Copy-Item -Recurse -Force (Join-Path $repoRoot 'runtime')   (Join-Path $pkgRoot 'runtime')
-# installer 全量
+# installer 全量 (路线 B 安装链)
 Copy-Item -Recurse -Force (Join-Path $repoRoot 'installer') (Join-Path $pkgRoot 'installer')
 # docs 全量
 Copy-Item -Recurse -Force (Join-Path $repoRoot 'docs')      (Join-Path $pkgRoot 'docs')
 # 顶层文件
 Copy-Item -Force (Join-Path $repoRoot 'README.md') (Join-Path $pkgRoot 'README.md')
 Copy-Item -Force (Join-Path $repoRoot 'LICENSE')   (Join-Path $pkgRoot 'LICENSE')
+
+# 路线 A · Patcher 资产 (运行时 IL 注入)
+$patcherDst = Join-Path $pkgRoot 'patcher'
+New-Item -ItemType Directory -Force -Path $patcherDst | Out-Null
+$patcherSrc = Join-Path $repoRoot 'src\GongwenPatcher'
+foreach ($f in @(
+    'bin\GongwenPatcher.dll',
+    'bin\0Harmony.dll',
+    'install_patcher.ps1',
+    'uninstall_patcher.ps1'
+)) {
+    $src = Join-Path $patcherSrc $f
+    if (Test-Path $src) {
+        Copy-Item -Force $src (Join-Path $patcherDst (Split-Path $f -Leaf))
+    } else {
+        Write-Warning ("missing patcher asset: " + $src)
+    }
+}
 
 # 列入包文件统计
 $pkgFiles = [System.IO.Directory]::GetFiles($pkgRoot, '*', [System.IO.SearchOption]::AllDirectories)
