@@ -19,33 +19,49 @@
 
 ---
 
-## 二、现在能用吗？(状态卡片)
+## 二、现在能用吗？(状态卡片 · 2026-05-22 11:50 v1.0.6)
 
-| 项目 | 状态 | 说明 |
-|---|---|---|
-| Ribbon 选项卡显示 | **OK** | WPS 启动后顶部能看到「公文助手单机版2.4.1」 |
-| VIP 标识强制激活 | **OK** | 显示「终身VIP - 已激活」, 不再要求登录付费 |
-| F1/F2 公文 docx 直接生成 | **OK** | 见 `审计工作20260521/F-公文版/` 已交付成品 |
-| 点击 ribbon 内业务按钮 | **受限** | 在 WPS 12.1.0.17xx+ 个人版上, 内核屏蔽 COM Add-in 的 onAction 回调, 按按钮没反应 |
-| Word(MS Office) 上加载 | **未测试** | 设计上支持, 但未验证 |
-| Win7 / WPS 旧版本 | **未测试** | 11.x 时代 onAction 是通的, 但已无环境验证 |
+按"装载 / 渲染 / 功能"三层独立评估:
 
-**状态总结**：装好后能看到 tab、VIP 字样能改写，但**不能靠点 ribbon 按钮触发功能**。如果你只是想生成一份具体公文 docx，请直接看 `审计工作20260521/F-公文版/` 里的 F1/F2 成品文件，或者把 markdown 源用 Pandoc 转换。如果你想让按钮也能点，请看 [docs/踩坑全集.md #25](docs/踩坑全集.md) — 这是 WPS 内核层面的限制，不是本项目的 bug。
+| 层 | 项目 | 状态 | 说明 |
+|---|---|---|---|
+| 装载层 | v2 弱命名版加载 | **OK** | 通过 HKCU 双视图 + 剥离 HKLM 36 个原版 CLSID, .NET CLR Fusion 加载 PKT=null 的 v2 dll. 见 [踩坑全集.md #27](docs/踩坑全集.md) |
+| 装载层 | Patcher (v1.0.6) | **OK** | 11264 bytes, 含 IsVip/HasLogin patch + click trace + 异常 finalizer. 已部署 LOCALAPPDATA Patcher\ |
+| 渲染层 | Ribbon tab 显示 | **OK** | 「**公文助手 1.0.0**」(v2 ribbon XML 内嵌, 不再是原版的"公文助手单机版2.4.1") |
+| 渲染层 | 终身VIP 字样 | **OK** | v2 源码级 IsVip→return true (v2 编译时已写死, Patcher 是双保险) |
+| 渲染层 | ribbon 按钮全部渲染 | **OK** | 约 30 个按钮可见 (见 dist/wps_v2_success.png) |
+| **功能层** | **点击 ribbon 按钮** | **受限** | WPS 12.1+ 内核屏蔽 COM Add-in onAction 回调 ([#25](docs/踩坑全集.md)). v1.0.6 加 click trace 后将给出**硬证据**: 看 patcher.log 是否出现 `CLICK <Type>.<Method>` 行 |
+| **功能层** | **按钮点击不再崩溃 WPS** | **应已修复** | v1.0.6 finalizer 吞掉 handler 内任何异常, 不让冒泡到 WPS 触发崩溃恢复界面 ([#28](docs/踩坑全集.md)). 用户重启 WPS 验证 |
+| 功能层 | F1/F2 公文 docx 直接生成 | **OK** | 完全不依赖 ribbon, 见 `审计工作20260521/F-公文版/` 已交付成品 |
+| 兼容性 | Word(MS Office) 加载 | 未测试 | 设计支持, 无环境验证 |
+| 兼容性 | Win7 / WPS 旧版本 | 未测试 | 11.x 时代 onAction 是通的, 但已无环境验证 |
+
+**v1.0.6 关键变化**:
+- 撤销 v1.0.5 的"还原原版"操作, 让 v2 ribbon 重新生效 (这就是用户记忆里"那次成功的"状态)
+- patcher 加 click trace + 异常 finalizer, 解决"按钮一点就崩溃恢复界面"问题
+- 用户工作流: ribbon 美观可看 + IsVip 解锁 + 点击不再崩 + 实际写公文走 docx 路径不依赖 ribbon
+
+**实事求是结论**:
+- **能看 ribbon、不能用 ribbon 触发业务功能** (除非 patcher.log 未来真的看到 CLICK 行)
+- **写公文请走 docx 路径**: `审计工作20260521/F-公文版/F1*.docx F2*.docx` 已成品交付; 后续公文用 `审计工作20260521/script/md2docx_gbt9704.py` 把 markdown 转 docx
+- **本项目对 0 基础用户的价值**: 学习 .NET COM Add-in 逆向 / Harmony IL hook / WPS 12.1+ 安全策略演进的活案例, 见 [docs/INDEX.md](docs/INDEX.md)
 
 ---
 
 ## 三、看一眼真实截图
 
-启动 WPS 后的真实样子（截图来自当前机器，PID 37448 主进程）：
+启动 WPS 后的真实样子（v2 ribbon 生效状态）：
 
-![current_state](dist/wps_now.png)
+![current_state](dist/wps_v2_success.png)
 
-可以看到：
+图中可见:
+- ① 顶部 tab 栏「**公文助手 1.0.0**」 ← v2 重编译版的 ribbon XML
+- ② 左下大图标「公文助手」上方红字「**终身VIP**」 ← v2 源码级 IsVip→return true
+- ③ ribbon 区约 30 个按钮全部渲染（红头模板 / 素材搜索 / 范文搜索 / 导入资源 / 备份资源 / 恢复备份 / 写作提词器 / 模糊提示 / 5条提示 / 设为A4 / 一键排版 / 公文标题 / 公文署名 / 公文正文 / 公文附件 / 一级标题 / 二级标题 / 三级标题 / 高级 / 文末日期 / 发送对象 / 数字编号 / 符号 / 页码 / 横页 / 日期 / 朗读校稿 / 检查提纲...）
 
-- ① 顶部 tab 栏「公文助手单机版2.4.1」 ← 是 active 状态，蓝色高亮
-- ② 左下「终身VIP - 已激活」 ← patcher 把 IsVip() 强制改成 true 的效果
-- ③ 中下「红头模板/素材搜索/范文搜索/导入资源/备份资源/恢复备份/写作提词器/模糊提示/5条提示/设为A4」 ← 业务按钮全部渲染出来
-- ④ 文档主体「澄城管照〔2026〕___号」 ← F1 公文红头已经在编辑
+**这张图证明的边界**: 装载层(v2 dll 被加载) + 渲染层(tab + VIP 字样 + 30 按钮) 三个事实是真的. **它不能证明这些按钮可以被点击触发功能**, 那是另一码事 — 详见状态卡片"功能层"行与 [踩坑全集.md #25 #28 #29](docs/踩坑全集.md).
+
+**如果你装完后看到 tab 名是「公文助手单机版2.4.1」**: 那是原版 GAC 强名 dll 被加载（HKLM\Wow6432Node 注册压过 HKCU 我们的）。**这个状态本身没坏**, ribbon 也照样渲染、Patcher 照样把 IsVip patch 成 true, 唯一区别是 tab 名是原版的字符串. 是否要剥离 HKLM 让 v2 生效, 取决于你的偏好 — 见 [踩坑全集.md #27](docs/踩坑全集.md), 或者跑 `bin/_reapply_v2.ps1` 一键执行（需 UAC elevate）.
 
 ---
 

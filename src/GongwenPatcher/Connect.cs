@@ -61,7 +61,7 @@ namespace GongwenPatcher
         public void OnAddInsUpdate(ref Array custom) { }
         public void OnStartupComplete(ref Array custom)
         {
-            // WPS 启动完成 → 之前 AddinsCL 里的 crash 计数是误报, 清掉避免累积 3 次后 wps 自动禁用
+            // WPS ??????? ?? ?? AddinsCL ??? crash ????????, ?????????? 3 ?κ? wps ???????
             try
             {
                 using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
@@ -142,7 +142,7 @@ namespace GongwenPatcher
 
                 var harmony = new Harmony("io.github.billysince.gongwen.patcher");
 
-                // ???? bool ????? -> Prefix ?? __result=true ??? return false (skip original)
+                // bool returnTrue methods -> Prefix overrides __result=true and skips original
                 string[] returnTrue = new[] { "IsVip", "HasLogin", "NeedAccountValidate", "NeedRegister" };
                 foreach (string mn in returnTrue)
                 {
@@ -164,6 +164,48 @@ namespace GongwenPatcher
                     harmony.Patch(m, prefix: new HarmonyMethod(prefix));
                     Log("  Patched " + mn);
                 }
+
+                // === click trace + exception finalizer (v1.0.6) ===
+                // Wrap all MyAddin._Click handlers + ribbon callbacks (Get*, On*) with:
+                //   - Prefix: log "CLICK <method>" so we can prove whether onAction was actually invoked
+                //   - Finalizer: swallow any exception so a crash inside handler does NOT trigger
+                //                WPS crash recovery dialog
+                Type myAddin = asm.GetType("Local_Wps_Vsto.MyAddin", false);
+                if (myAddin != null)
+                {
+                    int wrapped = 0;
+                    var tracePrefix = typeof(Patches).GetMethod("TracePrefix",
+                        BindingFlags.Public | BindingFlags.Static);
+                    var swallowFinal = typeof(Patches).GetMethod("SwallowExceptionFinalizer",
+                        BindingFlags.Public | BindingFlags.Static);
+                    foreach (var m in myAddin.GetMethods(BindingFlags.Public | BindingFlags.NonPublic |
+                        BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
+                    {
+                        string nm = m.Name;
+                        bool wrap = nm.EndsWith("_Click") || nm.StartsWith("btn") ||
+                                    nm.StartsWith("OnAction") || nm.StartsWith("GetLabel") ||
+                                    nm.StartsWith("GetVisible") || nm.StartsWith("GetImage") ||
+                                    nm.StartsWith("GetEnabled") || nm.StartsWith("OnLoad");
+                        if (!wrap) continue;
+                        if (m.IsAbstract || m.ContainsGenericParameters) continue;
+                        try
+                        {
+                            harmony.Patch(m,
+                                prefix: new HarmonyMethod(tracePrefix),
+                                finalizer: new HarmonyMethod(swallowFinal));
+                            wrapped++;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log("  wrap " + nm + " failed: " + ex.Message);
+                        }
+                    }
+                    Log("  wrapped " + wrapped + " MyAddin methods (trace + exception swallow)");
+                }
+                else
+                {
+                    Log("MyAddin type NOT FOUND, skip click-trace wrap");
+                }
             }
             catch (Exception ex)
             {
@@ -174,11 +216,52 @@ namespace GongwenPatcher
 
     public static class Patches
     {
-        // Harmony Prefix: ???? __result ???? false ??? skip ?????
+        // Harmony Prefix: __result=true and return false skips original method body
         public static bool ReturnTruePrefix(ref bool __result)
         {
             __result = true;
             return false;
+        }
+
+        // Harmony Prefix: log every invocation of wrapped methods. Returns true so original runs.
+        public static bool TracePrefix(MethodBase __originalMethod)
+        {
+            try
+            {
+                string dir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "GongwenAssistant");
+                string log = Path.Combine(dir, "patcher.log");
+                File.AppendAllText(log,
+                    DateTime.Now.ToString("HH:mm:ss.fff") + " CLICK " +
+                    __originalMethod.DeclaringType.Name + "." + __originalMethod.Name +
+                    Environment.NewLine);
+            }
+            catch { }
+            return true;
+        }
+
+        // Harmony Finalizer: swallow any exception so a crash inside a click handler
+        // does NOT trigger WPS crash recovery dialog. Returning null clears __exception.
+        public static Exception SwallowExceptionFinalizer(MethodBase __originalMethod, Exception __exception)
+        {
+            if (__exception != null)
+            {
+                try
+                {
+                    string dir = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "GongwenAssistant");
+                    string log = Path.Combine(dir, "patcher.log");
+                    File.AppendAllText(log,
+                        DateTime.Now.ToString("HH:mm:ss.fff") + " CLICK_EX " +
+                        __originalMethod.DeclaringType.Name + "." + __originalMethod.Name + ": " +
+                        __exception.GetType().Name + " " + __exception.Message +
+                        Environment.NewLine);
+                }
+                catch { }
+            }
+            return null;
         }
     }
 }
