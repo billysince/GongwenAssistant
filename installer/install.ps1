@@ -74,52 +74,82 @@ $TlbPath  = Join-Path $InstallDir 'Local_Wps_Vsto.tlb'
 $DllUri   = 'file:///' + ($DllPath -replace '\\','/')
 
 # -----------------------------------------------------------------------------
-# Step 2: HKCU COM CLSID 注册
+# Step 2: HKCU COM CLSID 注册（64 位 + 32 位 Wow6432Node 双视图）
 # -----------------------------------------------------------------------------
-Info "[2/5] 注册 COM CLSID 到 HKCU\Software\Classes\CLSID\$ClsId"
-$ClsidRoot = "HKCU:\Software\Classes\CLSID\$ClsId"
-New-Item -Path $ClsidRoot -Force | Out-Null
-Set-ItemProperty -Path $ClsidRoot -Name '(Default)' -Value $ProgId
+# 关键: WPS 是 32 位进程, 必须在 Wow6432Node 视图写注册才能被 32 位进程看到!
+# 历史 bug: 早期版本只写 64 位视图, 导致 v2 弱命名版从未真的被加载
+# 正确做法: 同时写 HKCU\Software\Classes\CLSID\... 和 HKCU\Software\Classes\Wow6432Node\CLSID\...
+# COM lookup 优先级: HKCU\Wow6432Node > HKLM\Wow6432Node, 这样 v2 才能 win 过 GAC 强名原版
+function Write-CLSID-Registration {
+    param([string]$ClsidRoot)
+    New-Item -Path $ClsidRoot -Force | Out-Null
+    Set-ItemProperty -Path $ClsidRoot -Name '(Default)' -Value $ProgId
 
-$Inproc = Join-Path $ClsidRoot 'InprocServer32'
-New-Item -Path $Inproc -Force | Out-Null
-Set-ItemProperty -Path $Inproc -Name '(Default)'      -Value 'mscoree.dll'
-Set-ItemProperty -Path $Inproc -Name 'ThreadingModel' -Value 'Both'
-Set-ItemProperty -Path $Inproc -Name 'Class'          -Value $ProgId
-# 弱命名 dll, 必须用 CodeBase 让 CLR 找到本地文件
-Set-ItemProperty -Path $Inproc -Name 'Assembly'       -Value "$AsmName, Version=$AsmVer, Culture=neutral, PublicKeyToken=null"
-Set-ItemProperty -Path $Inproc -Name 'CodeBase'       -Value $DllUri
-Set-ItemProperty -Path $Inproc -Name 'RuntimeVersion' -Value 'v4.0.30319'
+    $Inproc = Join-Path $ClsidRoot 'InprocServer32'
+    New-Item -Path $Inproc -Force | Out-Null
+    Set-ItemProperty -Path $Inproc -Name '(Default)'      -Value 'mscoree.dll'
+    Set-ItemProperty -Path $Inproc -Name 'ThreadingModel' -Value 'Both'
+    Set-ItemProperty -Path $Inproc -Name 'Class'          -Value $ProgId
+    Set-ItemProperty -Path $Inproc -Name 'Assembly'       -Value "$AsmName, Version=$AsmVer, Culture=neutral, PublicKeyToken=null"
+    Set-ItemProperty -Path $Inproc -Name 'CodeBase'       -Value $DllUri
+    Set-ItemProperty -Path $Inproc -Name 'RuntimeVersion' -Value 'v4.0.30319'
 
-$InprocVer = Join-Path $Inproc $AsmVer
-New-Item -Path $InprocVer -Force | Out-Null
-Set-ItemProperty -Path $InprocVer -Name 'Class'          -Value $ProgId
-Set-ItemProperty -Path $InprocVer -Name 'Assembly'       -Value "$AsmName, Version=$AsmVer, Culture=neutral, PublicKeyToken=null"
-Set-ItemProperty -Path $InprocVer -Name 'CodeBase'       -Value $DllUri
-Set-ItemProperty -Path $InprocVer -Name 'RuntimeVersion' -Value 'v4.0.30319'
+    $InprocVer = Join-Path $Inproc $AsmVer
+    New-Item -Path $InprocVer -Force | Out-Null
+    Set-ItemProperty -Path $InprocVer -Name 'Class'          -Value $ProgId
+    Set-ItemProperty -Path $InprocVer -Name 'Assembly'       -Value "$AsmName, Version=$AsmVer, Culture=neutral, PublicKeyToken=null"
+    Set-ItemProperty -Path $InprocVer -Name 'CodeBase'       -Value $DllUri
+    Set-ItemProperty -Path $InprocVer -Name 'RuntimeVersion' -Value 'v4.0.30319'
 
-# ProgId 反向映射
-$ProgIdKey = Join-Path $ClsidRoot 'ProgId'
-New-Item -Path $ProgIdKey -Force | Out-Null
-Set-ItemProperty -Path $ProgIdKey -Name '(Default)' -Value $ProgId
+    $ProgIdKey = Join-Path $ClsidRoot 'ProgId'
+    New-Item -Path $ProgIdKey -Force | Out-Null
+    Set-ItemProperty -Path $ProgIdKey -Name '(Default)' -Value $ProgId
 
-# Office Add-in 必需的 Implemented Categories
-$ImplCat = Join-Path $ClsidRoot 'Implemented Categories\{62C8FE65-4EBB-45e7-B440-6E39B2CDBF29}'
-New-Item -Path $ImplCat -Force | Out-Null
-Ok "COM CLSID 注册完成"
+    $ImplCat = Join-Path $ClsidRoot 'Implemented Categories\{62C8FE65-4EBB-45e7-B440-6E39B2CDBF29}'
+    New-Item -Path $ImplCat -Force | Out-Null
+}
+
+Info "[2/5] 注册 COM CLSID (64 位视图 HKCU\Software\Classes\CLSID\$ClsId)"
+Write-CLSID-Registration -ClsidRoot "HKCU:\Software\Classes\CLSID\$ClsId"
+Ok "  64 位视图注册完成"
+
+Info "[2/5] 注册 COM CLSID (32 位视图 HKCU\Software\Classes\Wow6432Node\CLSID\$ClsId)"
+Write-CLSID-Registration -ClsidRoot "HKCU:\Software\Classes\Wow6432Node\CLSID\$ClsId"
+Ok "  32 位视图注册完成 (WPS 32 位进程必需)"
+
+# 检测 HKLM Wow6432Node 是否有原版强名注册压在下面
+$HklmConflict = "HKLM:\Software\Wow6432Node\Classes\CLSID\$ClsId\InprocServer32"
+if (Test-Path $HklmConflict) {
+    $hklmAsm = (Get-ItemProperty $HklmConflict -ErrorAction SilentlyContinue).Assembly
+    if ($hklmAsm -and $hklmAsm -match 'PublicKeyToken=([0-9a-f]{16})') {
+        Warn "检测到 HKLM\Wow6432Node 存在原版强名注册:"
+        Warn "    $hklmAsm"
+        Warn "我们 HKCU 优先级理论上 win, 但 .NET CLR Fusion 在 PKT 不一致时可能 fallback 到 GAC."
+        Warn "如果安装后 patcher.log 显示 PKT=$($matches[1]) (而不是 null),"
+        Warn "说明 GAC 强名原版仍 dominant, 需进一步 卸 GAC + 移 HKLM 注册."
+    }
+}
 
 # -----------------------------------------------------------------------------
-# Step 3: HKCU ProgId 注册
+# Step 3: HKCU ProgId 注册（64 位 + 32 位双视图）
 # -----------------------------------------------------------------------------
-Info "[3/5] 注册 ProgId: $ProgId"
-$ProgIdRoot = "HKCU:\Software\Classes\$ProgId"
-New-Item -Path $ProgIdRoot -Force | Out-Null
-Set-ItemProperty -Path $ProgIdRoot -Name '(Default)' -Value $FriendlyName
+function Write-ProgId-Registration {
+    param([string]$ProgIdRoot)
+    New-Item -Path $ProgIdRoot -Force | Out-Null
+    Set-ItemProperty -Path $ProgIdRoot -Name '(Default)' -Value $FriendlyName
 
-$ProgClsid = Join-Path $ProgIdRoot 'CLSID'
-New-Item -Path $ProgClsid -Force | Out-Null
-Set-ItemProperty -Path $ProgClsid -Name '(Default)' -Value $ClsId
-Ok "ProgId 注册完成"
+    $ProgClsid = Join-Path $ProgIdRoot 'CLSID'
+    New-Item -Path $ProgClsid -Force | Out-Null
+    Set-ItemProperty -Path $ProgClsid -Name '(Default)' -Value $ClsId
+}
+
+Info "[3/5] 注册 ProgId: $ProgId (64 位视图)"
+Write-ProgId-Registration -ProgIdRoot "HKCU:\Software\Classes\$ProgId"
+Ok "  64 位视图 ProgId 注册完成"
+
+Info "[3/5] 注册 ProgId: $ProgId (32 位 Wow6432Node 视图)"
+Write-ProgId-Registration -ProgIdRoot "HKCU:\Software\Classes\Wow6432Node\$ProgId"
+Ok "  32 位视图 ProgId 注册完成"
 
 # -----------------------------------------------------------------------------
 # Step 4: Office Word Addins 注册

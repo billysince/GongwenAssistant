@@ -40,7 +40,9 @@ if ($wps) {
 # -----------------------------------------------------------------------------
 $keys = @(
     "HKCU:\Software\Classes\CLSID\$ClsId",
+    "HKCU:\Software\Classes\Wow6432Node\CLSID\$ClsId",
     "HKCU:\Software\Classes\$ProgId",
+    "HKCU:\Software\Classes\Wow6432Node\$ProgId",
     "HKCU:\Software\Microsoft\Office\Word\Addins\$ProgId"
 )
 foreach ($k in $keys) {
