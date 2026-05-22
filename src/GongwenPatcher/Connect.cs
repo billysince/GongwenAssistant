@@ -1,12 +1,31 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
-using Extensibility;
 using HarmonyLib;
 
 namespace GongwenPatcher
 {
+    [ComImport, Guid("B65AD801-ABAF-11D0-BB8B-00A0C90F2744")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+    internal interface IDTExtensibility2
+    {
+        [DispId(1)] void OnConnection([In, MarshalAs(UnmanagedType.IDispatch)] object Application,
+            [In] int ConnectMode,
+            [In, MarshalAs(UnmanagedType.IDispatch)] object AddInInst,
+            [In, MarshalAs(UnmanagedType.SafeArray)] ref Array custom);
+        [DispId(2)] void OnDisconnection([In] int RemoveMode,
+            [In, MarshalAs(UnmanagedType.SafeArray)] ref Array custom);
+        [DispId(3)] void OnAddInsUpdate(
+            [In, MarshalAs(UnmanagedType.SafeArray)] ref Array custom);
+        [DispId(4)] void OnStartupComplete(
+            [In, MarshalAs(UnmanagedType.SafeArray)] ref Array custom);
+        [DispId(5)] void OnBeginShutdown(
+            [In, MarshalAs(UnmanagedType.SafeArray)] ref Array custom);
+    }
+
     [Guid("9F1A2B3C-4D5E-6F70-8190-A1B2C3D4E5F6")]
     [ProgId("GongwenPatcher.Connect")]
     [ComVisible(true)]
@@ -35,7 +54,7 @@ namespace GongwenPatcher
             catch { }
         }
 
-        public void OnConnection(object Application, ext_ConnectMode ConnectMode,
+        public void OnConnection(object Application, int ConnectMode,
             object AddInInst, ref Array custom)
         {
             try
@@ -50,7 +69,7 @@ namespace GongwenPatcher
             }
         }
 
-        public void OnDisconnection(ext_DisconnectMode RemoveMode, ref Array custom)
+        public void OnDisconnection(int RemoveMode, ref Array custom)
         {
             Log("OnDisconnection " + RemoveMode);
         }
@@ -220,6 +239,70 @@ namespace GongwenPatcher
                         }
                     }
                     Log("  wrapped " + wrapped + " MyAddin methods (trace + exception swallow)");
+
+                    // v1.00: deep diagnostics - check wordApp and wrap DocWpsUtil methods
+                    var wordAppField = myAddin.GetField("wordApp",
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                    if (wordAppField != null)
+                    {
+                        object val = wordAppField.GetValue(null);
+                        Log("  MyAddin.wordApp = " + (val == null ? "NULL" : val.GetType().FullName));
+                    }
+                    else
+                    {
+                        Log("  MyAddin.wordApp field NOT FOUND");
+                    }
+
+                    // Fix: btnInsert_Two/Three_Click has a bug where count==0
+                    // causes sentences[0] COMException (COM is 1-based).
+                    // Transpiler changes "if (count == 1)" to "if (count <= 1)".
+                    var fixTranspiler = typeof(Patches).GetMethod("FixCountOneTranspiler",
+                        BindingFlags.Public | BindingFlags.Static);
+                    if (fixTranspiler != null)
+                    {
+                        string[] fixNames = new[] { "btnInsert_Two_Click", "btnInsert_Three_Click" };
+                        foreach (string fn in fixNames)
+                        {
+                            var mf = myAddin.GetMethod(fn,
+                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            if (mf != null)
+                            {
+                                try
+                                {
+                                    harmony.Patch(mf, transpiler: new HarmonyMethod(fixTranspiler));
+                                    Log("  Transpiler fix " + fn + " (count<=1 safe)");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log("  Transpiler fix failed " + fn + ": " + ex.Message);
+                                }
+                            }
+                        }
+                    }
+
+                    // Also wrap DocWpsUtil + MessageTipsUtil + WpsHelper methods
+                    string[] deepTypes = new[] { "Local_Wps_Vsto.DocWpsUtil", "Local_Wps_Vsto.WpsHelper",
+                        "Local_Wps_Vsto.MessageTipsUtil", "Local_Wps_Vsto.CommonConfig" };
+                    foreach (string tn in deepTypes)
+                    {
+                        Type dt = asm.GetType(tn, false);
+                        if (dt == null) continue;
+                        int dw = 0;
+                        foreach (var m in dt.GetMethods(BindingFlags.Public | BindingFlags.NonPublic |
+                            BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
+                        {
+                            if (m.IsAbstract || m.ContainsGenericParameters) continue;
+                            try
+                            {
+                                harmony.Patch(m,
+                                    prefix: new HarmonyMethod(tracePrefix),
+                                    finalizer: new HarmonyMethod(swallowFinal));
+                                dw++;
+                            }
+                            catch { }
+                        }
+                        Log("  wrapped " + dw + " " + dt.Name + " methods");
+                    }
                 }
                 else
                 {
@@ -263,8 +346,13 @@ namespace GongwenPatcher
                     __result = __result.Substring(0, idx) + rep1 + __result.Substring(idx + old1.Length);
                 }
 
-                // Also rename the group label "????????" (group gUser) if present
-                // Already correct in v2, might be different in GAC original
+                // Hide WeChat customer service button (btnKeFu)
+                string kefuId = "id=\"btnKeFu\"";
+                if (__result.Contains(kefuId))
+                {
+                    int ki = __result.IndexOf(kefuId);
+                    __result = __result.Insert(ki + kefuId.Length, " visible=\"false\"");
+                }
 
                 LogPatch("GetCustomUI XML rewritten, tab label -> " + newLabel);
             }
@@ -288,7 +376,12 @@ namespace GongwenPatcher
                         if (id == "gwgs")
                         {
                             __result = "\u516c\u6587\u52a9\u624b 1.00";
-                            return false; // skip original
+                            return false;
+                        }
+                        if (id == "btnUserMsg")
+                        {
+                            __result = "\u5df2\u6fc0\u6d3b";
+                            return false;
                         }
                     }
                 }
@@ -319,13 +412,66 @@ namespace GongwenPatcher
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "GongwenAssistant");
                 string log = Path.Combine(dir, "patcher.log");
+                string extra = "";
+                // On _Click methods, also check wordApp
+                if (__originalMethod.Name.EndsWith("_Click"))
+                {
+                    try
+                    {
+                        var waField = __originalMethod.DeclaringType.GetField("wordApp",
+                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                        if (waField != null)
+                        {
+                            object wa = waField.GetValue(null);
+                            extra = " wordApp=" + (wa == null ? "NULL" : "OK");
+                        }
+                    }
+                    catch { }
+                }
                 File.AppendAllText(log,
                     DateTime.Now.ToString("HH:mm:ss.fff") + " CLICK " +
                     __originalMethod.DeclaringType.Name + "." + __originalMethod.Name +
-                    Environment.NewLine);
+                    extra + Environment.NewLine);
             }
             catch { }
             return true;
+        }
+
+        // Transpiler: change "if (count == 1)" to "if (count <= 1)" in
+        // btnInsert_Two_Click / btnInsert_Three_Click. Handles three IL patterns:
+        //   A: ldc.i4.1; bne.un  ->  ldc.i4.1; bgt
+        //   B: ldc.i4.1; ceq; brfalse  ->  ldc.i4.1; cgt; brtrue
+        //   C: ldc.i4.1; beq  ->  ldc.i4.1; ble
+        public static IEnumerable<CodeInstruction> FixCountOneTranspiler(
+            IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+            int patchCount = 0;
+            for (int i = 1; i < codes.Count; i++)
+            {
+                if (codes[i - 1].opcode == OpCodes.Ldc_I4_1)
+                {
+                    if (codes[i].opcode == OpCodes.Bne_Un || codes[i].opcode == OpCodes.Bne_Un_S)
+                    {
+                        codes[i].opcode = codes[i].opcode == OpCodes.Bne_Un_S ? OpCodes.Bgt_S : OpCodes.Bgt;
+                        patchCount++;
+                    }
+                    else if (codes[i].opcode == OpCodes.Beq || codes[i].opcode == OpCodes.Beq_S)
+                    {
+                        codes[i].opcode = codes[i].opcode == OpCodes.Beq_S ? OpCodes.Ble_S : OpCodes.Ble;
+                        patchCount++;
+                    }
+                    else if (codes[i].opcode == OpCodes.Ceq && i + 1 < codes.Count &&
+                             (codes[i + 1].opcode == OpCodes.Brfalse || codes[i + 1].opcode == OpCodes.Brfalse_S))
+                    {
+                        codes[i].opcode = OpCodes.Cgt;
+                        codes[i + 1].opcode = codes[i + 1].opcode == OpCodes.Brfalse_S ? OpCodes.Brtrue_S : OpCodes.Brtrue;
+                        patchCount++;
+                    }
+                }
+            }
+            LogPatch("FixCountOneTranspiler patches=" + patchCount + " il_count=" + codes.Count);
+            return codes;
         }
 
         public static Exception SwallowExceptionFinalizer(MethodBase __originalMethod, Exception __exception)

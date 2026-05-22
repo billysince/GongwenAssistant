@@ -19,28 +19,29 @@
 
 ---
 
-## 二、现在能用吗？(状态卡片 · 2026-05-22 15:58 v1.00)
+## 二、现在能用吗？(状态卡片 · 2026-05-22 17:00 v1.01)
 
 按"装载 / 渲染 / 功能"三层独立评估:
 
 | 层 | 项目 | 状态 | 说明 |
 |---|---|---|---|
 | 装载层 | 原版 GAC dll 加载 | **OK** | 原版 GAC 强名 dll 通过 HKLM 注册加载, Patcher 在运行时 hook |
-| 装载层 | Patcher (v1.0.8) | **OK** | 12800 bytes, 含 IsVip/HasLogin patch + GetCustomUI rewrite + GetLabel override + click trace + 异常 finalizer |
-| 渲染层 | Ribbon tab 名称 | **OK** | 「**公文助手 1.00**」(Patcher 双层覆盖: GetCustomUI XML rewrite + GetLabel Prefix hook) |
-| 渲染层 | VIP 状态 | **OK** | 已激活 (Patcher IsVip→return true) |
-| 渲染层 | ribbon 按钮全部渲染 | **OK** | 约 30 个按钮可见 |
-| **功能层** | **点击 ribbon 按钮** | **已验证可调** | patcher.log 出现 `CLICK MyAddin.btnA4_New_Click` 等记录 — **onAction 回调确实被调用** ([#30](docs/踩坑全集.md) 推翻了 #25 结论) |
-| **功能层** | **按钮点击不再崩溃 WPS** | **已修复** | SwallowExceptionFinalizer 吞掉 handler 内任何异常, 不让冒泡到 WPS |
-| 功能层 | F1/F2 公文 docx 直接生成 | **OK** | 完全不依赖 ribbon, 见 `审计工作20260521/F-公文版/` 已交付成品 |
-| 兼容性 | Word(MS Office) 加载 | 未测试 | 设计支持, 无环境验证 |
-| 兼容性 | Win7 / WPS 旧版本 | 未测试 | 11.x 时代 onAction 是通的, 但已无环境验证 |
+| 装载层 | Patcher (v1.01) | **OK** | 14336 bytes, 含 Transpiler IL修复 + VIP patch + UI覆盖 + 异常兜底 |
+| 渲染层 | Ribbon tab 名称 | **OK** | 「**公文助手 1.00**」|
+| 渲染层 | VIP 状态 | **OK** | 「已激活」— 永久有效, 无定时炸弹 |
+| 渲染层 | ribbon 按钮全部渲染 | **OK** | 约 30 个按钮可见, 微信客服已隐藏 |
+| **功能层** | **序号按钮 (一、/(一)/一是)** | **已修复** | Transpiler 修复 count==1 COMException ([#33](docs/踩坑全集.md)) |
+| **功能层** | **所有按钮 onAction** | **已验证可调** | patcher.log 出现完整调用链, 零 CLICK_EX |
+| **功能层** | **按钮点击不再崩溃 WPS** | **已修复** | SwallowExceptionFinalizer 吞掉 handler 内任何异常 |
+| 功能层 | F1/F2 公文 docx 直接生成 | **OK** | 完全不依赖 ribbon |
+| 安全性 | VIP 机制 | **完全解锁** | IsVip()/HasLogin() 恒 true, 无过期逻辑, 无远程校验 |
 
-**v1.0.8 关键变化**:
-- tab 名从原版的"公文高手单机版2.4.1"改为「公文助手 1.00」(双层覆盖: GetCustomUI XML rewrite + GetLabel Prefix)
-- 重大发现: onAction 回调**确实被调用**, 推翻了之前 #25 的错误结论 ([#30](docs/踩坑全集.md))
-- 异常 finalizer 兜底, 按钮点击不再触发 WPS 崩溃恢复界面
-- GitHub 已推送: https://github.com/billysince/GongwenAssistant
+**v1.01 关键变化**:
+- Transpiler IL 级修复: btnInsert_Two (1处) + btnInsert_Three (2处) 的 count==1 COMException
+- 内联 IDTExtensibility2 接口, 消除 Extensibility.dll 外部依赖
+- 微信客服按钮隐藏 (GetCustomUI visible=false)
+- btnUserMsg 标签从"剩余xx天"改为"已激活"
+- GitHub: https://github.com/billysince/GongwenAssistant
 
 ---
 
@@ -71,9 +72,9 @@
 │       └─→ 不需要装本项目, 装 Pandoc + python-docx 即可
 │            参考: 审计工作20260521/script/md2docx_gbt9704.py
 │
-├── ❸ 我想在 WPS 上看到「公文助手」tab 这个 UI
+├── ❸ 我想在 WPS 上看到「公文助手」tab 并使用全部功能
 │       └─→ 装本项目, 看 docs/QUICKSTART.md (5 分钟版)
-│            注意: 按钮 onAction 不响应是已知限制, 不是 bug
+│            所有按钮功能已验证可用 (v1.01)
 │
 ├── ❹ 我想理解逆向 / .NET COM Add-in / Harmony IL hook 怎么做的
 │       └─→ 看 docs/原理分析.md + docs/Patcher方案.md + docs/工程复盘.md

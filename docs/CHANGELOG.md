@@ -4,6 +4,35 @@
 
 ---
 
+## [1.01] — 2026-05-22 (Transpiler 修复序号按钮 + VIP 显示 + 微信客服隐藏)
+
+### 核心修复: btnInsert_Two/Three count==1 COMException (#33)
+
+原版代码 `btnInsert_Two_Click` 和 `btnInsert_Three_Click` 中，当光标前无父级标题时，`count` 递减到 0，然后进入 `else` 分支访问 `sentences[0]`（COM 集合是 1-based），抛出 COMException，被空 `catch (Exception) {}` 吞掉。
+
+修复方案：Harmony Transpiler 在 IL 层面将 `if (count == 1)` 改为 `if (count <= 1)`。
+- btnInsert_Two_Click: 修复 1 处
+- btnInsert_Three_Click: 修复 2 处（两层嵌套）
+
+### Extensibility.dll 内联 (#34)
+
+编译 Patcher 时系统上无 Extensibility.dll。自行编译的存根因程序集标识不匹配导致 Patcher 无法加载。
+改为在 Connect.cs 中内联定义 IDTExtensibility2 接口（GUID: B65AD801-ABAF-11D0-BB8B-00A0C90F2744），消除外部依赖。
+
+### 功能清理 (#35)
+
+- btnKeFu（微信客服）按钮通过 GetCustomUI XML 注入 `visible="false"` 隐藏
+- btnUserMsg 标签从原版的"剩余xx天"改为"已激活"（GetLabel Prefix 覆盖）
+
+### VIP 机制安全性说明
+
+Patcher 拦截 `UserUtil.IsVip()` 和 `HasLogin()` 恒返回 true。全项目所有 VIP 功能门禁都经过这两个入口，因此：
+- 功能层面：100% 解锁，永不过期
+- 无定时炸弹：不存在任何代码在 N 天后锁定功能
+- "剩余xx天" 仅为原版 GetLabel 回调的显示文字，已被 Patcher 覆盖为"已激活"
+
+---
+
 ## [1.0.8] — 2026-05-22 (tab 名改成「公文助手」+ Patcher COM 注册完整性修复)
 
 ### 背景
